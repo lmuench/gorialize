@@ -82,11 +82,13 @@ func main() {
 	fmt.Println(db.Tables)
 	fmt.Println(user1)
 
-	userX := db.Get(user1.ID, &User{}).(*User)
-	fmt.Println(userX)
-	userX.Name = "Hans"
-	fmt.Println(userX)
+	user1.Name = "Tom"
 
-	userX2 := db.Get(user1.ID, &User{}).(*User)
+	userX1 := db.Get(1, &User{}).(*User)
+	fmt.Println(userX1)
+	userX1.Name = "Hans"
+	fmt.Println(userX1)
+
+	userX2 := db.Get(1, &User{}).(*User)
 	fmt.Println(userX2)
 }
