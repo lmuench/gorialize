@@ -5,13 +5,6 @@ import (
 	"reflect"
 )
 
-// type IDB interface {
-// 	Insert(item interface{}) uint
-// 	Get(id uint) interface{}
-// 	Update(id uint, item interface{})
-// 	Delete(id uint)
-// }
-
 type DB struct {
 	Tables map[string]Table
 }
@@ -55,10 +48,7 @@ func main() {
 
 	fmt.Println(db.Tables)
 
-	userX, ok := db.Get(0, User{}).(User)
-	if !ok {
-		return
-	}
+	userX := db.Get(0, User{}).(User)
 
 	userX.Age = 43
 	fmt.Println(user1)
