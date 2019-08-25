@@ -10,8 +10,8 @@ type DB struct {
 }
 
 type Table struct {
-	Counter int
-	Rows    map[int]Resource
+	Counter   int
+	Resources map[int]interface{}
 }
 
 type Resource interface {
@@ -30,18 +30,20 @@ func (db *DB) Insert(resource Resource) {
 	table := db.Tables[model]
 	defer func() { db.Tables[model] = table }()
 
-	if table.Rows == nil {
-		table.Rows = make(map[int]Resource)
+	if table.Resources == nil {
+		table.Resources = make(map[int]interface{})
 	}
 
 	table.Counter++
-	table.Rows[table.Counter] = resource
-	resource.SetID(table.Counter)
+	id := table.Counter
+	table.Resources[id] = resource
+	resource.SetID(id)
 }
 
-// func (db *DB) Get(id uint, model interface{}) interface{} {
-// 	return db.Tables[reflect.TypeOf(model).String()][id]
-// }
+func (db *DB) Get(id int, resource interface{}) interface{} {
+	model := reflect.TypeOf(resource).String()
+	return db.Tables[model].Resources[id]
+}
 
 // func (db *DB) GetAll(model interface{}) interface{} {
 // 	return db.Tables[reflect.TypeOf(model).String()]
@@ -80,15 +82,11 @@ func main() {
 	fmt.Println(db.Tables)
 	fmt.Println(user1)
 
-	// fmt.Println(db.GetAll(User{}))
+	userX := db.Get(user1.ID, &User{}).(*User)
+	fmt.Println(userX)
+	userX.Name = "Hans"
+	fmt.Println(userX)
 
-	// userX := db.Get(0, User{}).(User)
-
-	// userX.Age = 43
-	// fmt.Println(user1)
-	// fmt.Println(userX)
-
-	// db.Update(0, userX)
-	// fmt.Println(db.GetAll(User{}))
-	// fmt.Println(db.Get(0, User{}))
+	userX2 := db.Get(user1.ID, &User{}).(*User)
+	fmt.Println(userX2)
 }
