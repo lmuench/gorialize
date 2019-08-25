@@ -9,32 +9,60 @@ type DB struct {
 	Tables map[string]Table
 }
 
+type Table struct {
+	Counter int
+	Rows    map[int]Resource
+}
+
+type Resource interface {
+	GetID() int
+	SetID(ID int)
+}
+
 func newDB() DB {
 	return DB{
 		Tables: make(map[string]Table),
 	}
 }
 
-type Table []interface{}
-
-func (db *DB) Insert(resource interface{}) uint {
+func (db *DB) Insert(resource Resource) Resource {
 	model := reflect.TypeOf(resource).String()
-	db.Tables[model] = append(db.Tables[model], resource)
-	return uint(len(db.Tables[model]))
+	table := db.Tables[model]
+	if table.Rows == nil {
+		table.Rows = make(map[int]Resource)
+	}
+	table.Counter++
+	table.Rows[table.Counter] = resource
+	resource.SetID(table.Counter)
+	db.Tables[model] = table
+	return resource
 }
 
-func (db *DB) Get(id uint, model interface{}) interface{} {
-	return db.Tables[reflect.TypeOf(model).String()][id]
-}
+// func (db *DB) Get(id uint, model interface{}) interface{} {
+// 	return db.Tables[reflect.TypeOf(model).String()][id]
+// }
 
-func (db *DB) Update(id uint, resource interface{}) {
-	model := reflect.TypeOf(resource).String()
-	db.Tables[model][id] = resource
-}
+// func (db *DB) GetAll(model interface{}) interface{} {
+// 	return db.Tables[reflect.TypeOf(model).String()]
+// }
+
+// func (db *DB) Update(id uint, resource interface{}) {
+// 	model := reflect.TypeOf(resource).String()
+// 	db.Tables[model][id] = resource
+// }
 
 type User struct {
+	ID   int
 	Name string
 	Age  uint
+}
+
+func (self *User) GetID() int {
+	return self.ID
+}
+
+func (self *User) SetID(ID int) {
+	self.ID = ID
 }
 
 func main() {
@@ -44,17 +72,19 @@ func main() {
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(user1)
+	db.Insert(&user1)
 
 	fmt.Println(db.Tables)
 
-	userX := db.Get(0, User{}).(User)
+	// fmt.Println(db.GetAll(User{}))
 
-	userX.Age = 43
-	fmt.Println(user1)
-	fmt.Println(userX)
+	// userX := db.Get(0, User{}).(User)
 
-	db.Update(0, userX)
-	fmt.Println(db.Tables)
-	fmt.Println(db.Get(0, User{}))
+	// userX.Age = 43
+	// fmt.Println(user1)
+	// fmt.Println(userX)
+
+	// db.Update(0, userX)
+	// fmt.Println(db.GetAll(User{}))
+	// fmt.Println(db.Get(0, User{}))
 }
