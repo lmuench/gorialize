@@ -25,17 +25,18 @@ func newDB() DB {
 	}
 }
 
-func (db *DB) Insert(resource Resource) Resource {
+func (db *DB) Insert(resource Resource) {
 	model := reflect.TypeOf(resource).String()
 	table := db.Tables[model]
+	defer func() { db.Tables[model] = table }()
+
 	if table.Rows == nil {
 		table.Rows = make(map[int]Resource)
 	}
+
 	table.Counter++
 	table.Rows[table.Counter] = resource
 	resource.SetID(table.Counter)
-	db.Tables[model] = table
-	return resource
 }
 
 // func (db *DB) Get(id uint, model interface{}) interface{} {
@@ -72,9 +73,12 @@ func main() {
 		Name: "John Doe",
 		Age:  42,
 	}
+	fmt.Println(user1)
+
 	db.Insert(&user1)
 
 	fmt.Println(db.Tables)
+	fmt.Println(user1)
 
 	// fmt.Println(db.GetAll(User{}))
 
