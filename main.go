@@ -57,15 +57,6 @@ func (db *DB) Get(id int, resource interface{}) error {
 	return err
 }
 
-// func (db *DB) GetAll(model interface{}) interface{} {
-// 	return db.Tables[reflect.TypeOf(model).String()]
-// }
-
-// func (db *DB) Update(id uint, resource interface{}) {
-// 	model := reflect.TypeOf(resource).String()
-// 	db.Tables[model][id] = resource
-// }
-
 type User struct {
 	ID   int
 	Name string
