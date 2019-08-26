@@ -40,7 +40,7 @@ func (db *DB) Insert(resource Resource) error {
 	id := table.Counter
 	resource.SetID(id)
 
-	resourceBuffer := table.Resources[id]
+	var resourceBuffer bytes.Buffer
 	defer func() { table.Resources[id] = resourceBuffer }()
 
 	enc := gob.NewEncoder(&resourceBuffer)
@@ -83,25 +83,32 @@ func (self *User) SetID(ID int) {
 func main() {
 	db := newDB()
 
-	user1 := User{
+	user1 := &User{
 		Name: "John Doe",
 		Age:  42,
 	}
 	fmt.Println(user1)
 
-	_ = db.Insert(&user1)
+	_ = db.Insert(user1)
 
-	// fmt.Println(db.Tables)
-	// fmt.Println(user1)
-
-	// user1.Name = "Tom"
+	user1.Name = "Tom"
+	fmt.Println(user1)
 
 	userX1 := &User{}
 	err := db.Get(1, userX1)
 	fmt.Println(userX1, err)
-	// userX1.Name = "Hans"
-	// fmt.Println(userX1)
 
-	// userX2 := db.Get(1, &User{}).(*User)
-	// fmt.Println(userX2)
+	userX1.Name = "Hans"
+	fmt.Println(userX1)
+
+	userX2 := &User{}
+	err = db.Get(1, userX2)
+	fmt.Println(userX2, err)
+
+	userX2.Name = "Alice"
+	_ = db.Insert(userX2)
+
+	userX3 := &User{}
+	err = db.Get(2, userX3)
+	fmt.Println(userX3, err)
 }
