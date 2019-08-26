@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"os"
+	"os/signal"
 	"reflect"
+	"time"
 )
 
 type DB struct {
@@ -22,9 +25,24 @@ type Resource interface {
 }
 
 func newDB() DB {
-	return DB{
+	db := DB{
 		Tables: make(map[string]Table),
 	}
+	WriteToDiskOnShutdown(db)
+	return db
+}
+
+func WriteToDiskOnShutdown(db DB) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		WriteToDisk(db)
+	}()
+}
+
+func WriteToDisk(db DB) {
+	// TODO
 }
 
 func (db *DB) Insert(resource Resource) error {
@@ -98,6 +116,8 @@ func main() {
 
 	userX2.Name = "Alice"
 	_ = db.Insert(userX2)
+
+	time.Sleep(time.Second * 3)
 
 	userX3 := &User{}
 	err = db.Get(2, userX3)
