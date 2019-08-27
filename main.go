@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"reflect"
@@ -42,11 +44,38 @@ func WriteToDiskOnShutdown(db DB) {
 }
 
 func WriteToDisk(db DB) {
-	// TODO
+	path := "/tmp/gobdb/"
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err := os.Mkdir(path, os.ModePerm)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	fmt.Println("Writing DB to disk:")
+	fmt.Println(db.Tables)
+
+	for model, table := range db.Tables {
+		f, err := os.Create(path + model + ".dump")
+		if err != nil {
+			log.Panic(err)
+		}
+		defer f.Close()
+
+		w := bufio.NewWriter(f)
+		for _, resource := range table.Resources {
+			_, err = fmt.Fprintf(w, "%v\n", resource.Bytes())
+			if err != nil {
+				log.Panic(err)
+			}
+		}
+		w.Flush()
+	}
 }
 
 func (db *DB) Insert(resource Resource) error {
-	model := reflect.TypeOf(resource).String()
+	model := reflect.TypeOf(resource).String()[1:]
 	table := db.Tables[model]
 	defer func() { db.Tables[model] = table }()
 
@@ -117,6 +146,7 @@ func main() {
 	userX2.Name = "Alice"
 	_ = db.Insert(userX2)
 
+	fmt.Println(db.Tables)
 	time.Sleep(time.Second * 3)
 
 	userX3 := &User{}
