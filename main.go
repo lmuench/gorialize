@@ -125,19 +125,6 @@ func (db *DB) Insert(resource Resource) error {
 	return err
 }
 
-// func (db *DB) InsertGob(model string, id int, gob bytes.Buffer) {
-// 	table := db.Tables[model]
-// 	defer func() { db.Tables[model] = table }()
-
-// 	if table.Resources == nil {
-// 		table.Resources = make(map[int]bytes.Buffer)
-// 	}
-
-// 	table.Counter++
-
-// 	table.Resources[id] = gob
-// }
-
 func (db *DB) Get(id int, resource interface{}) error {
 	model := reflect.TypeOf(resource).String()
 	resourceBuffer := db.Tables[model].Resources[id]
