@@ -97,10 +97,26 @@ func Dump(db DB) {
 	}
 }
 
+func TablePath(model string) string {
+	return basePath + "/" + model
+}
+
+func TableMetadataPath(tablePath string) string {
+	return tablePath + "/metadata"
+}
+
+func ResourcePath(tablePath string, id int) string {
+	return tablePath + "/" + strconv.Itoa(id)
+}
+
+func ModelName(resource interface{}) string {
+	return reflect.TypeOf(resource).String()[1:]
+}
+
 func (db *DB) Insert(resource Resource) {
-	model := reflect.TypeOf(resource).String()[1:]
-	tablePath := basePath + "/" + model
-	metadataPath := tablePath + "/metadata"
+	model := ModelName(resource)
+	tablePath := TablePath(model)
+	metadataPath := TableMetadataPath(tablePath)
 
 	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
 		err = os.MkdirAll(metadataPath, os.ModePerm)
@@ -154,12 +170,27 @@ func (db *DB) Insert(resource Resource) {
 	}
 }
 
-func (db *DB) Get(id int, resource interface{}) error {
-	model := reflect.TypeOf(resource).String()
-	resourceBuffer := db.Tables[model].Resources[id]
-	dec := gob.NewDecoder(&resourceBuffer)
-	err := dec.Decode(resource)
-	return err
+func (db *DB) Get(resource interface{}, id int) error {
+	model := ModelName(resource)
+	tablePath := TablePath(model)
+	metadataPath := TableMetadataPath(tablePath)
+
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		return err
+	}
+
+	b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
+	if err != nil {
+		panic(err)
+	}
+
+	buf := bytes.NewReader(b)
+	dec := gob.NewDecoder(buf)
+	err = dec.Decode(resource)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type User struct {
@@ -179,11 +210,20 @@ func (self *User) SetID(ID int) {
 func main() {
 	db := newDB()
 
-	user1 := &User{
+	user1 := User{
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(user1)
+	db.Insert(&user1)
+
+	var userX1 User
+	err := db.Get(&userX1, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(userX1)
+	userX1.Age++
+	db.Insert(&userX1)
 
 	// time.Sleep(time.Second * 3)
 }
