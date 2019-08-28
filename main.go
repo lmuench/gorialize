@@ -1,16 +1,19 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 	"reflect"
+	"strconv"
 	"time"
 )
+
+const path string = "/tmp/gobdb/"
 
 type DB struct {
 	Tables map[string]Table
@@ -30,47 +33,73 @@ func newDB() DB {
 	db := DB{
 		Tables: make(map[string]Table),
 	}
-	WriteToDiskOnShutdown(db)
+	Restore(db)
+	DumpOnShutdown(db)
 	return db
 }
 
-func WriteToDiskOnShutdown(db DB) {
+func Restore(db DB) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Restoring DB from disk")
+	filenames, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, filename := range filenames {
+		b, err := ioutil.ReadFile(path + filename.Name())
+		if err != nil {
+			panic(err)
+		}
+		var resource User
+		buffer := bytes.NewReader(b)
+		dec := gob.NewDecoder(buffer)
+		err = dec.Decode(&resource)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("---")
+		fmt.Println(resource)
+		fmt.Println("---")
+	}
+
+	fmt.Println("###")
+	fmt.Println(db.Tables)
+	fmt.Println("###")
+}
+
+func DumpOnShutdown(db DB) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		WriteToDisk(db)
+		Dump(db)
 	}()
 }
 
-func WriteToDisk(db DB) {
-	path := "/tmp/gobdb/"
+func Dump(db DB) {
+	// TODO dump table.Counter to file
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.Mkdir(path, os.ModePerm)
 		if err != nil {
-			log.Panic(err)
+			log.Fatal(err)
 		}
 	}
 
-	fmt.Println("Writing DB to disk:")
+	fmt.Println("Dumping DB to disk:")
 	fmt.Println(db.Tables)
 
 	for model, table := range db.Tables {
-		f, err := os.Create(path + model + ".dump")
-		if err != nil {
-			log.Panic(err)
-		}
-		defer f.Close()
-
-		w := bufio.NewWriter(f)
-		for _, resource := range table.Resources {
-			_, err = fmt.Fprintf(w, "%v\n", resource.Bytes())
+		for id, resource := range table.Resources {
+			err := ioutil.WriteFile(path+model+"."+strconv.Itoa(id)+".gob", resource.Bytes(), 0644)
 			if err != nil {
-				log.Panic(err)
+				panic(err)
 			}
 		}
-		w.Flush()
 	}
 }
 
@@ -95,6 +124,19 @@ func (db *DB) Insert(resource Resource) error {
 	fmt.Println(resourceBuffer)
 	return err
 }
+
+// func (db *DB) InsertGob(model string, id int, gob bytes.Buffer) {
+// 	table := db.Tables[model]
+// 	defer func() { db.Tables[model] = table }()
+
+// 	if table.Resources == nil {
+// 		table.Resources = make(map[int]bytes.Buffer)
+// 	}
+
+// 	table.Counter++
+
+// 	table.Resources[id] = gob
+// }
 
 func (db *DB) Get(id int, resource interface{}) error {
 	model := reflect.TypeOf(resource).String()
@@ -144,6 +186,8 @@ func main() {
 	fmt.Println(userX2, err)
 
 	userX2.Name = "Alice"
+	userX2.Age = 34
+	_ = db.Insert(userX2)
 	_ = db.Insert(userX2)
 
 	fmt.Println(db.Tables)
