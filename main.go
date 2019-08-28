@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
 	"reflect"
 	"strconv"
 )
@@ -15,102 +14,18 @@ import (
 const basePath string = "/tmp/gobdb"
 
 type DB struct {
-	Tables map[string]Table
+	// Name string
+	// Tables map[string]Table
 }
 
-type Table struct {
-	Counter   int
-	Resources map[int]bytes.Buffer
-}
+// type Table struct {
+// 	Counter   int
+// 	Resources map[int]bytes.Buffer
+// }
 
 type Resource interface {
 	GetID() int
 	SetID(ID int)
-}
-
-func newDB() DB {
-	db := DB{
-		Tables: make(map[string]Table),
-	}
-	// Restore(db)
-	// DumpOnShutdown(db)
-	return db
-}
-
-func Restore(db DB) {
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Restoring DB from disk:")
-	filenames, err := ioutil.ReadDir(basePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, filename := range filenames {
-		b, err := ioutil.ReadFile(basePath + filename.Name())
-		if err != nil {
-			panic(err)
-		}
-		var resource User
-		buffer := bytes.NewReader(b)
-		dec := gob.NewDecoder(buffer)
-		err = dec.Decode(&resource)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(resource)
-	}
-}
-
-func DumpOnShutdown(db DB) {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		Dump(db)
-	}()
-}
-
-func Dump(db DB) {
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		err := os.Mkdir(basePath, os.ModePerm)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	fmt.Println("Dumping DB to disk...")
-
-	for model, table := range db.Tables {
-		err := ioutil.WriteFile(basePath+model+"."+"counter", []byte(strconv.Itoa(table.Counter)), 0644)
-		if err != nil {
-			panic(err)
-		}
-		for id, resource := range table.Resources {
-			err := ioutil.WriteFile(basePath+model+"."+strconv.Itoa(id)+".gob", resource.Bytes(), 0644)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-}
-
-func TablePath(model string) string {
-	return basePath + "/" + model
-}
-
-func TableMetadataPath(tablePath string) string {
-	return tablePath + "/metadata"
-}
-
-func ResourcePath(tablePath string, id int) string {
-	return tablePath + "/" + strconv.Itoa(id)
-}
-
-func ModelName(resource interface{}) string {
-	return reflect.TypeOf(resource).String()[1:]
 }
 
 func (db *DB) Insert(resource Resource) {
@@ -124,17 +39,6 @@ func (db *DB) Insert(resource Resource) {
 			log.Fatal(err)
 		}
 	}
-
-	// table := db.Tables[model]
-	// defer func() { db.Tables[model] = table }()
-
-	// if table.Resources == nil {
-	// table.Resources = make(map[int]bytes.Buffer)
-	// }
-
-	// table.Counter++
-
-	// id := table.Counter
 
 	var counter int
 	b, err := ioutil.ReadFile(metadataPath + "/counter")
@@ -151,8 +55,6 @@ func (db *DB) Insert(resource Resource) {
 	resource.SetID(id)
 
 	var buf bytes.Buffer
-	// defer func() { table.Resources[id] = buf }()
-
 	enc := gob.NewEncoder(&buf)
 	err = enc.Encode(resource)
 	if err != nil {
@@ -193,6 +95,22 @@ func (db *DB) Get(resource interface{}, id int) error {
 	return nil
 }
 
+func TablePath(model string) string {
+	return basePath + "/" + model
+}
+
+func TableMetadataPath(tablePath string) string {
+	return tablePath + "/metadata"
+}
+
+func ResourcePath(tablePath string, id int) string {
+	return tablePath + "/" + strconv.Itoa(id)
+}
+
+func ModelName(resource interface{}) string {
+	return reflect.TypeOf(resource).String()[1:]
+}
+
 type User struct {
 	ID   int
 	Name string
@@ -208,7 +126,7 @@ func (self *User) SetID(ID int) {
 }
 
 func main() {
-	db := newDB()
+	db := &DB{}
 
 	user1 := User{
 		Name: "John Doe",
@@ -224,6 +142,4 @@ func main() {
 	fmt.Println(userX1)
 	userX1.Age++
 	db.Insert(&userX1)
-
-	// time.Sleep(time.Second * 3)
 }
