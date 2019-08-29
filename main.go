@@ -89,7 +89,7 @@ func (db *DB) Get(resource interface{}, id int) error {
 }
 
 // TODO will registering an interface help?
-func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) error {
+func (db *DB) GetAll(resource interface{}, callback func(resource interface{}, id int)) error {
 	model := ModelName(resource)
 	tablePath := TablePath(model)
 
@@ -121,7 +121,7 @@ func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) 
 		dec := gob.NewDecoder(buf)
 		err = dec.Decode(resource)
 		fmt.Println(id, resource)
-		callback(resource)
+		callback(resource, id)
 		resources[id] = resource // TODO won't work since this is a pointer and will change with every iteration
 		// resources = append(resources.([]interface{}), resource)
 		if err != nil {
@@ -253,8 +253,7 @@ func main() {
 
 	users := make(map[int]User)
 
-	err = db.GetAll(&User{}, func(resource interface{}) {
-		id := resource.(*User).GetID()
+	err = db.GetAll(&User{}, func(resource interface{}, id int) {
 		users[id] = *resource.(*User)
 	})
 	if err != nil {
