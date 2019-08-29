@@ -88,7 +88,7 @@ func (db *DB) Get(resource interface{}, id int) error {
 	return nil
 }
 
-func (db *DB) GetAll(resource interface{}) (map[int]interface{}, error) {
+func (db *DB) GetAll(resource interface{}) (IMap, error) {
 	model := ModelName(resource)
 	tablePath := TablePath(model)
 
@@ -101,7 +101,7 @@ func (db *DB) GetAll(resource interface{}) (map[int]interface{}, error) {
 		return nil, err
 	}
 
-	resources := make(map[int]interface{})
+	resources := make(IMap)
 
 	for _, f := range files {
 		if f.IsDir() {
@@ -228,6 +228,7 @@ func main() {
 	fmt.Println(userX1)
 	userX1.Age++
 	db.Insert(&userX1)
+	fmt.Println(userX1)
 
 	// users := make(map[int]*User)
 	// users := make([]User, 1)
@@ -253,11 +254,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	users := make(map[int]User)
-	for k, v := range result {
-		users[k] = *v.(*User)
-	}
+	users := result.ToUserMap()
 
 	fmt.Println(users)
 	fmt.Println(users[1].Name)
+}
+
+type IMap map[int]interface{}
+
+func (imap IMap) ToUserMap() map[int]User {
+	users := make(map[int]User)
+	for k, v := range imap {
+		users[k] = *v.(*User)
+	}
+	return users
 }
