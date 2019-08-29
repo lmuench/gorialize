@@ -181,6 +181,12 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(usersSlice)
+
+	usersOver42Slice, err := GetAllUsersOver42Slice(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(usersOver42Slice)
 }
 
 func GetAllUsersMap(db *DB) (map[int]User, error) {
@@ -202,6 +208,21 @@ func GetAllUsersSlice(db *DB) ([]User, error) {
 	err := db.GetAll(&User{}, func(resource interface{}) {
 		user := *resource.(*User)
 		users = append(users, user)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func GetAllUsersOver42Slice(db *DB) ([]User, error) {
+	users := []User{}
+
+	err := db.GetAll(&User{}, func(resource interface{}) {
+		user := *resource.(*User)
+		if user.Age > 42 {
+			users = append(users, user)
+		}
 	})
 	if err != nil {
 		return nil, err
