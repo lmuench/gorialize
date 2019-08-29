@@ -119,6 +119,10 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 	return nil
 }
 
+func ModelName(resource interface{}) string {
+	return reflect.TypeOf(resource).String()[1:]
+}
+
 func (db DB) TablePath(model string) string {
 	return db.Path + "/" + model
 }
@@ -129,8 +133,4 @@ func TableMetadataPath(tablePath string) string {
 
 func ResourcePath(tablePath string, id int) string {
 	return tablePath + "/" + strconv.Itoa(id)
-}
-
-func ModelName(resource interface{}) string {
-	return reflect.TypeOf(resource).String()[1:]
 }
