@@ -1,144 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"reflect"
-	"strconv"
+
+	"github.com/lmuench/gobdb/gobdb"
 )
 
-const basePath string = "/tmp/gobdb"
-
-type DB struct {
-	// Name string
-}
-
-type Resource interface {
-	GetID() int
-	SetID(ID int)
-}
-
-func (db *DB) Insert(resource Resource) {
-	model := ModelName(resource)
-	tablePath := TablePath(model)
-	metadataPath := TableMetadataPath(tablePath)
-
-	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
-		err = os.MkdirAll(metadataPath, os.ModePerm)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	var counter int
-	b, err := ioutil.ReadFile(metadataPath + "/counter")
-	if err == nil {
-		counter, err = strconv.Atoi(string(b))
-		if err != nil {
-			log.Fatal(err)
-		}
-		counter++
-	} else {
-		counter = 1
-	}
-	id := counter
-	resource.SetID(id)
-
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(resource)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = ioutil.WriteFile(metadataPath+"/"+"counter", []byte(strconv.Itoa(counter)), 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (db *DB) Get(resource interface{}, id int) error {
-	model := ModelName(resource)
-	tablePath := TablePath(model)
-
-	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-		return err
-	}
-
-	b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
-	if err != nil {
-		return err
-	}
-
-	buf := bytes.NewReader(b)
-	dec := gob.NewDecoder(buf)
-	err = dec.Decode(resource)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) error {
-	model := ModelName(resource)
-	tablePath := TablePath(model)
-
-	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-		return err
-	}
-
-	files, err := ioutil.ReadDir(tablePath)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
-		if err != nil {
-			return err
-		}
-
-		buf := bytes.NewReader(b)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(resource)
-		if err != nil {
-			return err
-		}
-		callback(resource)
-	}
-
-	return nil
-}
-
-func TablePath(model string) string {
-	return basePath + "/" + model
-}
-
-func TableMetadataPath(tablePath string) string {
-	return tablePath + "/metadata"
-}
-
-func ResourcePath(tablePath string, id int) string {
-	return tablePath + "/" + strconv.Itoa(id)
-}
-
-func ModelName(resource interface{}) string {
-	return reflect.TypeOf(resource).String()[1:]
-}
-
+// User implements gobdb.Resource interface
 type User struct {
 	ID   int
 	Name string
@@ -153,8 +22,9 @@ func (self *User) SetID(ID int) {
 	self.ID = ID
 }
 
+// Example gobdb usage
 func main() {
-	db := &DB{}
+	db := &gobdb.DB{Path: "/tmp/gobdb"}
 
 	user1 := User{
 		Name: "John Doe",
@@ -189,7 +59,9 @@ func main() {
 	fmt.Println(usersOver42Slice)
 }
 
-func GetAllUsersMap(db *DB) (map[int]User, error) {
+// Helper functions you can define
+// SELECT * FROM USERS
+func GetAllUsersMap(db *gobdb.DB) (map[int]User, error) {
 	users := make(map[int]User)
 
 	err := db.GetAll(&User{}, func(resource interface{}) {
@@ -199,7 +71,8 @@ func GetAllUsersMap(db *DB) (map[int]User, error) {
 	return users, err
 }
 
-func GetAllUsersSlice(db *DB) ([]User, error) {
+// SELECT * FROM USERS
+func GetAllUsersSlice(db *gobdb.DB) ([]User, error) {
 	users := []User{}
 
 	err := db.GetAll(&User{}, func(resource interface{}) {
@@ -209,7 +82,8 @@ func GetAllUsersSlice(db *DB) ([]User, error) {
 	return users, err
 }
 
-func GetAllUsersOver42Slice(db *DB) ([]User, error) {
+// SELECT * FROM USERS WHERE AGE > 42
+func GetAllUsersOver42Slice(db *gobdb.DB) ([]User, error) {
 	users := []User{}
 
 	err := db.GetAll(&User{}, func(resource interface{}) {
