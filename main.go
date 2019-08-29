@@ -170,11 +170,17 @@ func main() {
 	userX1.Age++
 	db.Insert(&userX1)
 
-	users, err := GetAllUsersMap(db)
+	usersMap, err := GetAllUsersMap(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(users)
+	fmt.Println(usersMap)
+
+	usersSlice, err := GetAllUsersSlice(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(usersSlice)
 }
 
 func GetAllUsersMap(db *DB) (map[int]User, error) {
@@ -183,6 +189,19 @@ func GetAllUsersMap(db *DB) (map[int]User, error) {
 	err := db.GetAll(&User{}, func(resource interface{}) {
 		user := *resource.(*User)
 		users[user.GetID()] = user
+	})
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func GetAllUsersSlice(db *DB) ([]User, error) {
+	users := []User{}
+
+	err := db.GetAll(&User{}, func(resource interface{}) {
+		user := *resource.(*User)
+		users = append(users, user)
 	})
 	if err != nil {
 		return nil, err
