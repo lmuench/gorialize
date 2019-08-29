@@ -88,20 +88,21 @@ func (db *DB) Get(resource interface{}, id int) error {
 	return nil
 }
 
-func (db *DB) GetAll(resource interface{}) (IMap, error) {
+// TODO will registering an interface help?
+func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) error {
 	model := ModelName(resource)
 	tablePath := TablePath(model)
 
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-		return nil, err
+		return err
 	}
 
 	files, err := ioutil.ReadDir(tablePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	resources := make(IMap)
+	resources := make(map[int]interface{})
 
 	for _, f := range files {
 		if f.IsDir() {
@@ -110,23 +111,23 @@ func (db *DB) GetAll(resource interface{}) (IMap, error) {
 
 		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		id, err := strconv.Atoi(f.Name())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		buf := bytes.NewReader(b)
 		dec := gob.NewDecoder(buf)
 		err = dec.Decode(resource)
-		resources[id] = resource
+		fmt.Println(id, resource)
+		callback(resource)
+		resources[id] = resource // TODO won't work since this is a pointer and will change with every iteration
 		// resources = append(resources.([]interface{}), resource)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	fmt.Println(resources)
 
 	// var buf bytes.Buffer
 	// enc := gob.NewEncoder(&buf)
@@ -139,7 +140,7 @@ func (db *DB) GetAll(resource interface{}) (IMap, error) {
 	// if err != nil {
 	// 	return err
 	// }
-	return resources, nil
+	return nil
 }
 
 func (db *DB) Where(resource interface{}, callback func(resource interface{}) bool) error {
@@ -250,22 +251,28 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	result, err := db.GetAll(&User{})
+	users := make(map[int]*User)
+
+	err = db.GetAll(&User{}, func(resource interface{}) {
+		id := resource.(*User).GetID()
+		users[id] = resource.(*User)
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	users := result.ToUserMap()
+	// users := result.ToUserMap()
 
 	fmt.Println(users)
 	fmt.Println(users[1].Name)
 }
 
-type IMap map[int]interface{}
+// type IMap map[int]interface{}
 
-func (imap IMap) ToUserMap() map[int]User {
-	users := make(map[int]User)
-	for k, v := range imap {
-		users[k] = *v.(*User)
-	}
-	return users
-}
+// func (imap IMap) ToUserMap() map[int]User {
+// 	users := make(map[int]User)
+// 	for k, v := range imap {
+// 		// fmt.Println(k, *v.(*User))
+// 		users[k] = *v.(*User)
+// 	}
+// 	return users
+// }
