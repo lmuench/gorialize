@@ -19,7 +19,7 @@ type DB struct {
 }
 
 // type Table struct {
-// 	Counter   int
+// 	// Counter   int
 // 	Resources map[int]bytes.Buffer
 // }
 
@@ -27,6 +27,8 @@ type Resource interface {
 	GetID() int
 	SetID(ID int)
 }
+
+// type Resources map[int]Resource
 
 func (db *DB) Insert(resource Resource) {
 	model := ModelName(resource)
@@ -75,9 +77,8 @@ func (db *DB) Insert(resource Resource) {
 func (db *DB) Get(resource interface{}, id int) error {
 	model := ModelName(resource)
 	tablePath := TablePath(model)
-	metadataPath := TableMetadataPath(tablePath)
 
-	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
 	}
 
@@ -93,6 +94,46 @@ func (db *DB) Get(resource interface{}, id int) error {
 		return err
 	}
 	return nil
+}
+
+func (db *DB) GetAll(resource interface{}) (map[int]interface{}, error) {
+	model := ModelName(resource)
+	tablePath := TablePath(model)
+
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	files, err := ioutil.ReadDir(tablePath)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make(map[int]interface{})
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
+		if err != nil {
+			return nil, err
+		}
+		id, err := strconv.Atoi(f.Name())
+		if err != nil {
+			return nil, err
+		}
+		buf := bytes.NewReader(b)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(resource)
+		resources[id] = resource
+		fmt.Println(id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return resources, nil
 }
 
 func TablePath(model string) string {
@@ -142,4 +183,15 @@ func main() {
 	fmt.Println(userX1)
 	userX1.Age++
 	db.Insert(&userX1)
+
+	users, err := db.GetAll(&User{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(users)
+
+	for _, user := range users {
+		fmt.Println(*user.(*User))
+	}
 }
