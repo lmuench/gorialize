@@ -22,41 +22,41 @@ func (self *User) SetID(ID int) {
 	self.ID = ID
 }
 
+type TodoList struct {
+	ID    int
+	Owner User
+	Title string
+}
+
+func (self *TodoList) GetID() int {
+	return self.ID
+}
+
+func (self *TodoList) SetID(ID int) {
+	self.ID = ID
+}
+
 // Example gobdb usage
 func main() {
 	db := &gobdb.DB{Path: "/tmp/gobdb"}
 
-	user1 := User{
+	u1 := User{
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(&user1)
 
-	var userX1 User
-	err := db.Get(&userX1, 1)
+	tdl1 := TodoList{
+		Owner: u1,
+		Title: "My Todo List",
+	}
+	db.Insert(&tdl1)
+
+	todoLists, err := GetAllTodoLists(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-	userX1.Age++
-	db.Insert(&userX1)
-
-	usersMap, err := GetAllUsersMap(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(usersMap)
-
-	usersSlice, err := GetAllUsersSlice(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(usersSlice)
-
-	usersOver42Slice, err := GetAllUsersOver42Slice(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(usersOver42Slice)
+	fmt.Println(todoLists)
+	fmt.Println(todoLists[0].Owner)
 }
 
 // Helper functions you can define
@@ -72,7 +72,7 @@ func GetAllUsersMap(db *gobdb.DB) (map[int]User, error) {
 }
 
 // SELECT * FROM USERS
-func GetAllUsersSlice(db *gobdb.DB) ([]User, error) {
+func GetAllUsers(db *gobdb.DB) ([]User, error) {
 	users := []User{}
 
 	err := db.GetAll(&User{}, func(resource interface{}) {
@@ -83,7 +83,7 @@ func GetAllUsersSlice(db *gobdb.DB) ([]User, error) {
 }
 
 // SELECT * FROM USERS WHERE AGE > 42
-func GetAllUsersOver42Slice(db *gobdb.DB) ([]User, error) {
+func GetAllUsersOver42(db *gobdb.DB) ([]User, error) {
 	users := []User{}
 
 	err := db.GetAll(&User{}, func(resource interface{}) {
@@ -93,4 +93,15 @@ func GetAllUsersOver42Slice(db *gobdb.DB) ([]User, error) {
 		}
 	})
 	return users, err
+}
+
+// SELECT * FROM TODOLISTS
+func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
+	todoLists := []TodoList{}
+
+	err := db.GetAll(&TodoList{}, func(resource interface{}) {
+		todoList := *resource.(*TodoList)
+		todoLists = append(todoLists, todoList)
+	})
+	return todoLists, err
 }
