@@ -199,7 +199,7 @@ func GetAllUsersMap(db *DB) (map[int]User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+	return users, err
 }
 
 func GetAllUsersSlice(db *DB) ([]User, error) {
@@ -212,7 +212,7 @@ func GetAllUsersSlice(db *DB) ([]User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+	return users, err
 }
 
 func GetAllUsersOver42Slice(db *DB) ([]User, error) {
@@ -224,8 +224,5 @@ func GetAllUsersOver42Slice(db *DB) ([]User, error) {
 			users = append(users, user)
 		}
 	})
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
+	return users, err
 }
