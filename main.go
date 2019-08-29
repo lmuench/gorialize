@@ -196,9 +196,6 @@ func GetAllUsersMap(db *DB) (map[int]User, error) {
 		user := *resource.(*User)
 		users[user.GetID()] = user
 	})
-	if err != nil {
-		return nil, err
-	}
 	return users, err
 }
 
@@ -209,9 +206,6 @@ func GetAllUsersSlice(db *DB) ([]User, error) {
 		user := *resource.(*User)
 		users = append(users, user)
 	})
-	if err != nil {
-		return nil, err
-	}
 	return users, err
 }
 
