@@ -19,7 +19,7 @@ type Resource interface {
 	SetID(ID int)
 }
 
-func (db *DB) Insert(resource Resource) {
+func (db DB) Insert(resource Resource) {
 	model := ModelName(resource)
 	tablePath := db.TablePath(model)
 	metadataPath := TableMetadataPath(tablePath)
@@ -63,7 +63,7 @@ func (db *DB) Insert(resource Resource) {
 	}
 }
 
-func (db *DB) Get(resource interface{}, id int) error {
+func (db DB) Get(resource interface{}, id int) error {
 	model := ModelName(resource)
 	tablePath := db.TablePath(model)
 
@@ -85,7 +85,7 @@ func (db *DB) Get(resource interface{}, id int) error {
 	return nil
 }
 
-func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) error {
+func (db DB) GetAll(resource interface{}, callback func(resource interface{})) error {
 	model := ModelName(resource)
 	tablePath := db.TablePath(model)
 
