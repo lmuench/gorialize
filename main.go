@@ -249,9 +249,15 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	users, err := db.GetAll(&User{})
+	result, err := db.GetAll(&User{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(users[1].(*User).Name)
+	users := make(map[int]User)
+	for k, v := range result {
+		users[k] = *v.(*User)
+	}
+
+	fmt.Println(users)
+	fmt.Println(users[1].Name)
 }
