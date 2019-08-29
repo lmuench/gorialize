@@ -88,62 +88,7 @@ func (db *DB) Get(resource interface{}, id int) error {
 	return nil
 }
 
-// TODO will registering an interface help?
-func (db *DB) GetAll(resource interface{}, callback func(resource interface{}, id int)) error {
-	model := ModelName(resource)
-	tablePath := TablePath(model)
-
-	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-		return err
-	}
-
-	files, err := ioutil.ReadDir(tablePath)
-	if err != nil {
-		return err
-	}
-
-	resources := make(map[int]interface{})
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
-		if err != nil {
-			return err
-		}
-		id, err := strconv.Atoi(f.Name())
-		if err != nil {
-			return err
-		}
-		buf := bytes.NewReader(b)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(resource)
-		fmt.Println(id, resource)
-		callback(resource, id)
-		resources[id] = resource // TODO won't work since this is a pointer and will change with every iteration
-		// resources = append(resources.([]interface{}), resource)
-		if err != nil {
-			return err
-		}
-	}
-
-	// var buf bytes.Buffer
-	// enc := gob.NewEncoder(&buf)
-	// err = enc.Encode(resources)
-	// if err != nil {
-	// 	return err
-	// }
-	// dec := gob.NewDecoder(&buf)
-	// err = dec.Decode(result)
-	// if err != nil {
-	// 	return err
-	// }
-	return nil
-}
-
-func (db *DB) Where(resource interface{}, callback func(resource interface{}) bool) error {
+func (db *DB) GetAll(resource interface{}, callback func(resource interface{})) error {
 	model := ModelName(resource)
 	tablePath := TablePath(model)
 
@@ -165,20 +110,16 @@ func (db *DB) Where(resource interface{}, callback func(resource interface{}) bo
 		if err != nil {
 			return err
 		}
-		// id, err := strconv.Atoi(f.Name())
-		// if err != nil {
-		// 	return err
-		// }
+
 		buf := bytes.NewReader(b)
 		dec := gob.NewDecoder(buf)
 		err = dec.Decode(resource)
 		if err != nil {
 			return err
 		}
-		if callback(resource) {
-			return nil
-		}
+		callback(resource)
 	}
+
 	return nil
 }
 
@@ -226,54 +167,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(userX1)
 	userX1.Age++
 	db.Insert(&userX1)
-	fmt.Println(userX1)
-
-	// users := make(map[int]*User)
-	// users := make([]User, 1)
-	// err = db.GetAll(users)
-	// if err != nil {
-	// log.Fatal(err)
-	// }
-
-	// fmt.Println(users)
-
-	// for _, user := range users {
-	// 	fmt.Println(*user.(*User))
-	// }
-	// var userWhere User
-	// err = db.Where(&userWhere, func(user interface{}) bool {
-	// 	return user.(*User).Age == 43
-	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
 	users := make(map[int]User)
 
-	err = db.GetAll(&User{}, func(resource interface{}, id int) {
-		users[id] = *resource.(*User)
+	err = db.GetAll(&User{}, func(resource interface{}) {
+		user := *resource.(*User)
+		users[user.GetID()] = user
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	// users := result.ToUserMap()
 
 	fmt.Println(users)
-	fmt.Println(users[1].Age)
-	fmt.Println(users[2].Age)
-	fmt.Println(users[3].Age)
 }
-
-// type IMap map[int]interface{}
-
-// func (imap IMap) ToUserMap() map[int]User {
-// 	users := make(map[int]User)
-// 	for k, v := range imap {
-// 		// fmt.Println(k, *v.(*User))
-// 		users[k] = *v.(*User)
-// 	}
-// 	return users
-// }
