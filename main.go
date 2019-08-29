@@ -15,20 +15,12 @@ const basePath string = "/tmp/gobdb"
 
 type DB struct {
 	// Name string
-	// Tables map[string]Table
 }
-
-// type Table struct {
-// 	// Counter   int
-// 	Resources map[int]bytes.Buffer
-// }
 
 type Resource interface {
 	GetID() int
 	SetID(ID int)
 }
-
-// type Resources map[int]Resource
 
 func (db *DB) Insert(resource Resource) {
 	model := ModelName(resource)
@@ -47,7 +39,7 @@ func (db *DB) Insert(resource Resource) {
 	if err == nil {
 		counter, err = strconv.Atoi(string(b))
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		counter++
 	} else {
@@ -60,17 +52,17 @@ func (db *DB) Insert(resource Resource) {
 	enc := gob.NewEncoder(&buf)
 	err = enc.Encode(resource)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	err = ioutil.WriteFile(metadataPath+"/"+"counter", []byte(strconv.Itoa(counter)), 0644)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -84,7 +76,7 @@ func (db *DB) Get(resource interface{}, id int) error {
 
 	b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	buf := bytes.NewReader(b)
@@ -128,12 +120,65 @@ func (db *DB) GetAll(resource interface{}) (map[int]interface{}, error) {
 		dec := gob.NewDecoder(buf)
 		err = dec.Decode(resource)
 		resources[id] = resource
-		fmt.Println(id)
+		// resources = append(resources.([]interface{}), resource)
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	fmt.Println(resources)
+
+	// var buf bytes.Buffer
+	// enc := gob.NewEncoder(&buf)
+	// err = enc.Encode(resources)
+	// if err != nil {
+	// 	return err
+	// }
+	// dec := gob.NewDecoder(&buf)
+	// err = dec.Decode(result)
+	// if err != nil {
+	// 	return err
+	// }
 	return resources, nil
+}
+
+func (db *DB) Where(resource interface{}, callback func(resource interface{}) bool) error {
+	model := ModelName(resource)
+	tablePath := TablePath(model)
+
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
+		return err
+	}
+
+	files, err := ioutil.ReadDir(tablePath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
+		if err != nil {
+			return err
+		}
+		// id, err := strconv.Atoi(f.Name())
+		// if err != nil {
+		// 	return err
+		// }
+		buf := bytes.NewReader(b)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(resource)
+		if err != nil {
+			return err
+		}
+		if callback(resource) {
+			return nil
+		}
+	}
+	return nil
 }
 
 func TablePath(model string) string {
@@ -184,14 +229,29 @@ func main() {
 	userX1.Age++
 	db.Insert(&userX1)
 
+	// users := make(map[int]*User)
+	// users := make([]User, 1)
+	// err = db.GetAll(users)
+	// if err != nil {
+	// log.Fatal(err)
+	// }
+
+	// fmt.Println(users)
+
+	// for _, user := range users {
+	// 	fmt.Println(*user.(*User))
+	// }
+	// var userWhere User
+	// err = db.Where(&userWhere, func(user interface{}) bool {
+	// 	return user.(*User).Age == 43
+	// })
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 	users, err := db.GetAll(&User{})
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(users)
-
-	for _, user := range users {
-		fmt.Println(*user.(*User))
-	}
+	fmt.Println(users[1].(*User).Name)
 }
