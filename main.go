@@ -251,11 +251,11 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	users := make(map[int]*User)
+	users := make(map[int]User)
 
 	err = db.GetAll(&User{}, func(resource interface{}) {
 		id := resource.(*User).GetID()
-		users[id] = resource.(*User)
+		users[id] = *resource.(*User)
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -263,7 +263,9 @@ func main() {
 	// users := result.ToUserMap()
 
 	fmt.Println(users)
-	fmt.Println(users[1].Name)
+	fmt.Println(users[1].Age)
+	fmt.Println(users[2].Age)
+	fmt.Println(users[3].Age)
 }
 
 // type IMap map[int]interface{}
