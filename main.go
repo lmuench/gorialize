@@ -24,7 +24,7 @@ func (self *User) SetID(ID int) {
 
 type TodoList struct {
 	ID    int
-	Owner User
+	Owner *User
 	Title string
 }
 
@@ -44,19 +44,40 @@ func main() {
 		Name: "John Doe",
 		Age:  42,
 	}
-
 	tdl1 := TodoList{
-		Owner: u1,
+		Owner: &u1,
 		Title: "My Todo List",
 	}
+	u1.Age++
 	db.Insert(&tdl1)
+
+	u2 := User{
+		Name: "Steve Miller",
+		Age:  26,
+	}
+	tdl2 := TodoList{
+		Owner: &u2,
+		Title: "Stuff I need to do",
+	}
+	u2.Age++
+	db.Insert(&tdl2)
+
+	var tdlX1 TodoList
+	_ = db.Get(&tdlX1, 1)
+	fmt.Println(tdlX1.Owner)
+	var tdlX2 TodoList
+	_ = db.Get(&tdlX2, 2)
+	fmt.Println(tdlX2.Owner)
 
 	todoLists, err := GetAllTodoLists(db)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(todoLists)
-	fmt.Println(todoLists[0].Owner)
+	for _, tdl := range todoLists {
+		fmt.Println(tdl.Owner)
+	}
 }
 
 // Helper functions you can define
@@ -101,6 +122,8 @@ func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
 
 	err := db.GetAll(&TodoList{}, func(resource interface{}) {
 		todoList := *resource.(*TodoList)
+		owner := *todoList.Owner
+		todoList.Owner = &owner
 		todoLists = append(todoLists, todoList)
 	})
 	return todoLists, err
