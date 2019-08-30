@@ -38,10 +38,10 @@ func (self *TodoList) SetID(ID int) {
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{Path: "/tmp/gobdb"}
+	db := &gobdb.DB{Path: "/tmp/gobdb/dev"}
 
 	u1 := User{
-		Name: "Jojo Mack",
+		Name: "John Doe",
 		Age:  42,
 	}
 
@@ -49,7 +49,7 @@ func main() {
 
 	tdl1 := TodoList{
 		UserID: u1.GetID(),
-		Title:  "Poetic Justice",
+		Title:  "My Todo List",
 	}
 	db.Insert(&tdl1)
 
@@ -66,10 +66,6 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(todoLists)
-
-	// for _, tdl := range todoLists {
-	// 	fmt.Println(tdl.Owner)
-	// }
 }
 
 // Helper functions you can define
@@ -108,6 +104,7 @@ func GetAllUsersOver42(db *gobdb.DB) ([]User, error) {
 	return users, err
 }
 
+// SELECT * FROM TODOLISTS
 func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
 	todoLists := []TodoList{}
 
