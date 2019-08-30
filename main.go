@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jinzhu/copier"
 	"github.com/lmuench/gobdb/gobdb"
 )
 
@@ -116,15 +117,28 @@ func GetAllUsersOver42(db *gobdb.DB) ([]User, error) {
 	return users, err
 }
 
-// SELECT * FROM TODOLISTS
 func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
 	todoLists := []TodoList{}
 
 	err := db.GetAll(&TodoList{}, func(resource interface{}) {
-		todoList := *resource.(*TodoList)
-		owner := *todoList.Owner
-		todoList.Owner = &owner
+		var todoList TodoList
+		err := copier.Copy(&todoList, resource)
+		if err != nil {
+			log.Fatal(err)
+		}
 		todoLists = append(todoLists, todoList)
 	})
 	return todoLists, err
 }
+
+// func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
+// 	todoLists := []TodoList{}
+
+// 	err := db.GetAll(&TodoList{}, func(resource interface{}) {
+// 		todoList := *resource.(*TodoList)
+// 		owner := *todoList.Owner
+// 		todoList.Owner = &owner
+// 		todoLists = append(todoLists, todoList)
+// 	})
+// 	return todoLists, err
+// }
