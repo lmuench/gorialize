@@ -22,6 +22,7 @@ func (self *User) SetID(ID int) {
 	self.ID = ID
 }
 
+// TodoList implements gobdb.Resource interface
 type TodoList struct {
 	ID     int
 	UserID int
@@ -40,26 +41,28 @@ func (self *TodoList) SetID(ID int) {
 func main() {
 	db := &gobdb.DB{Path: "/tmp/gobdb/dev"}
 
-	u1 := User{
-		Name: "John Doe",
-		Age:  42,
+	for i := 0; i < 1000; i++ {
+		u1 := User{
+			Name: "John Doe",
+			Age:  42,
+		}
+
+		db.Insert(&u1)
+
+		tdl1 := TodoList{
+			UserID: u1.GetID(),
+			Title:  "My Todo List",
+		}
+		db.Insert(&tdl1)
 	}
 
-	db.Insert(&u1)
+	// var tdlX1 TodoList
+	// _ = db.Get(&tdlX1, tdl1.GetID())
+	// fmt.Println(tdlX1)
 
-	tdl1 := TodoList{
-		UserID: u1.GetID(),
-		Title:  "My Todo List",
-	}
-	db.Insert(&tdl1)
-
-	var tdlX1 TodoList
-	_ = db.Get(&tdlX1, tdl1.GetID())
-	fmt.Println(tdlX1)
-
-	var uX1 User
-	_ = db.Get(&uX1, tdlX1.UserID)
-	fmt.Println(uX1)
+	// var uX1 User
+	// _ = db.Get(&uX1, tdlX1.UserID)
+	// fmt.Println(uX1)
 
 	todoLists, err := GetAllTodoLists(db)
 	if err != nil {
