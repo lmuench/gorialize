@@ -4,27 +4,27 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lmuench/gobdb/example"
+	"github.com/lmuench/gobdb/example/model"
 	"github.com/lmuench/gobdb/gobdb"
 )
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{Path: "/tmp/gobdb/dev"}
+	db := &gobdb.DB{Path: "/tmp/gobdb/example_dev"}
 
-	u1 := example.User{
+	u1 := model.User{
 		Name: "John Doe",
 		Age:  42,
 	}
 	db.Insert(&u1)
 
-	tdl1 := example.TodoList{
+	tdl1 := model.TodoList{
 		OwnerID: u1.GetID(),
 		Title:   "My Todo List",
 	}
 	db.Insert(&tdl1)
 
-	var tdlX1 example.TodoList
+	var tdlX1 model.TodoList
 	_ = db.Get(&tdlX1, tdl1.GetID())
 	fmt.Println(tdlX1)
 
@@ -34,7 +34,7 @@ func main() {
 	}
 	fmt.Println(uX1)
 
-	todoLists, err := example.GetAllTodoLists(db)
+	todoLists, err := model.GetAllTodoLists(db)
 	if err != nil {
 		log.Fatal(err)
 	}
