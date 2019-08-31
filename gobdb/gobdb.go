@@ -111,13 +111,18 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 	return nil
 }
 
+func (db DB) Delete(resource Resource) error {
+	tablePath := db.TablePath(resource)
+	resourcePath := ResourcePath(tablePath, resource.GetID())
+	err := os.Remove(resourcePath)
+	return err
+}
+
 func (db DB) Update(resource Resource) error {
 	tablePath := db.TablePath(resource)
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
 	}
-
-	id := resource.GetID()
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -126,6 +131,7 @@ func (db DB) Update(resource Resource) error {
 		log.Fatal(err)
 	}
 
+	id := resource.GetID()
 	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
 	return err
 }

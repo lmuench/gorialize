@@ -51,4 +51,11 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(todoListsX2)
+
+	// for _, tdl := range todoListsX2 {
+	// 	err := db.Delete(&tdl)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 }
