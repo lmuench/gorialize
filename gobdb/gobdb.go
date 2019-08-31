@@ -20,8 +20,7 @@ type Resource interface {
 }
 
 func (db DB) Insert(resource Resource) {
-	model := ModelName(resource)
-	tablePath := db.TablePath(model)
+	tablePath := db.TablePath(resource)
 	metadataPath := TableMetadataPath(tablePath)
 
 	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
@@ -64,8 +63,7 @@ func (db DB) Insert(resource Resource) {
 }
 
 func (db DB) Get(resource interface{}, id int) error {
-	model := ModelName(resource)
-	tablePath := db.TablePath(model)
+	tablePath := db.TablePath(resource)
 
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
@@ -79,15 +77,11 @@ func (db DB) Get(resource interface{}, id int) error {
 	buf := bytes.NewReader(b)
 	dec := gob.NewDecoder(buf)
 	err = dec.Decode(resource)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (db DB) GetAll(resource interface{}, callback func(resource interface{})) error {
-	model := ModelName(resource)
-	tablePath := db.TablePath(model)
+	tablePath := db.TablePath(resource)
 
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
@@ -119,11 +113,33 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 	return nil
 }
 
+func (db DB) Update(resource Resource) error {
+	tablePath := db.TablePath(resource)
+	metadataPath := TableMetadataPath(tablePath)
+
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		return err
+	}
+
+	id := resource.GetID()
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(resource)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
+	return err
+}
+
 func ModelName(resource interface{}) string {
 	return reflect.TypeOf(resource).String()[1:]
 }
 
-func (db DB) TablePath(model string) string {
+func (db DB) TablePath(resource interface{}) string {
+	model := ModelName(resource)
 	return db.Path + "/" + model
 }
 

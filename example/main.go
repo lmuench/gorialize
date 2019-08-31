@@ -34,9 +34,21 @@ func main() {
 	}
 	fmt.Println(uX1)
 
-	todoLists, err := model.GetAllTodoLists(db)
+	todoListsX1, err := model.GetAllTodoLists(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(todoLists)
+	fmt.Println(todoListsX1)
+
+	tdlX1.Title = "A different title"
+	err = db.Update(&tdlX1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	todoListsX2, err := model.GetAllTodoLists(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(todoListsX2)
 }
