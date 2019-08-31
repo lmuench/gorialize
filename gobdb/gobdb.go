@@ -64,7 +64,6 @@ func (db DB) Insert(resource Resource) {
 
 func (db DB) Get(resource interface{}, id int) error {
 	tablePath := db.TablePath(resource)
-
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
 	}
@@ -82,7 +81,6 @@ func (db DB) Get(resource interface{}, id int) error {
 
 func (db DB) GetAll(resource interface{}, callback func(resource interface{})) error {
 	tablePath := db.TablePath(resource)
-
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
 	}
@@ -115,9 +113,7 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 
 func (db DB) Update(resource Resource) error {
 	tablePath := db.TablePath(resource)
-	metadataPath := TableMetadataPath(tablePath)
-
-	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
 	}
 
