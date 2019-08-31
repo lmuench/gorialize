@@ -17,14 +17,6 @@ func (self *User) SetID(ID int) {
 	self.ID = ID
 }
 
-// Helpers
-
-func (self TodoList) GetOwner(db *gobdb.DB) (User, error) {
-	var user User
-	err := db.Get(&user, self.OwnerID)
-	return user, err
-}
-
 // SELECT * FROM USERS
 func GetAllUsersMap(db *gobdb.DB) (map[int]User, error) {
 	users := make(map[int]User)

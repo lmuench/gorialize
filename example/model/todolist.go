@@ -19,6 +19,14 @@ func (self *TodoList) SetID(ID int) {
 
 // Helpers
 
+func (self TodoList) GetOwner(db *gobdb.DB) (User, error) {
+	var user User
+	err := db.Get(&user, self.OwnerID)
+	return user, err
+}
+
+// Helpers
+
 // SELECT * FROM TODOLISTS
 func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
 	todoLists := []TodoList{}
