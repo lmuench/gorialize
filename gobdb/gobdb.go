@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type DB struct {
@@ -52,12 +53,12 @@ func (db DB) Insert(resource Resource) {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(ResourcePath(tablePath, id), buf.Bytes(), 0644)
+	err = db.SafeWrite(ResourcePath(tablePath, id), buf.Bytes())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(counterPath, []byte(strconv.Itoa(counter)), 0644)
+	err = db.SafeWrite(counterPath, []byte(strconv.Itoa(counter)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -171,7 +172,7 @@ func (db DB) Update(resource Resource) error {
 	}
 
 	id := resource.GetID()
-	err = ioutil.WriteFile(ResourcePath(tablePath, id), buf.Bytes(), 0644)
+	err = db.SafeWrite(ResourcePath(tablePath, id), buf.Bytes())
 	return err
 }
 
@@ -194,4 +195,16 @@ func TableCounterPath(metadataPath string) string {
 
 func ResourcePath(tablePath string, id int) string {
 	return tablePath + "/" + strconv.Itoa(id)
+}
+
+func (db DB) ThwartIOBasePathEscape(ioOperationPath string) {
+	if !strings.HasPrefix(ioOperationPath, db.Path) {
+		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
+	}
+}
+
+func (db DB) SafeWrite(path string, b []byte) error {
+	db.ThwartIOBasePathEscape(path)
+	err := ioutil.WriteFile(path, b, 0644)
+	return err
 }
