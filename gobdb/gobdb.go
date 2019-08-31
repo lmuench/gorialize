@@ -205,7 +205,7 @@ func (db DB) ThwartIOBasePathEscape(ioOperationPath string) {
 		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
 	}
 	if strings.Contains(ioOperationPath, "..") {
-		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
+		log.Fatal("Thwarted attempted IO operation with path containing '..'")
 	}
 }
 
