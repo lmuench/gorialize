@@ -118,6 +118,40 @@ func (db DB) Delete(resource Resource) error {
 	return err
 }
 
+func (db DB) DeleteAll(resource Resource) error {
+	tablePath := db.TablePath(resource)
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
+		return nil
+	}
+	files, err := ioutil.ReadDir(tablePath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		err = DeleteFileWithIntegerNameOnly(tablePath, f)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	return nil
+}
+
+func DeleteFileWithIntegerNameOnly(path string, f os.FileInfo) error {
+	if f.IsDir() {
+		return nil
+	}
+	id, err := strconv.Atoi(f.Name())
+	if err != nil {
+		return nil
+	}
+	err = os.Remove(ResourcePath(path, id))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db DB) Update(resource Resource) error {
 	tablePath := db.TablePath(resource)
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
