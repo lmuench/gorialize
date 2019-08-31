@@ -4,9 +4,9 @@ import "github.com/lmuench/gobdb/gobdb"
 
 // TodoList implements gobdb.Resource interface
 type TodoList struct {
-	ID      int
-	OwnerID int
-	Title   string
+	ID     int
+	UserID int
+	Title  string
 }
 
 func (self *TodoList) GetID() int {
@@ -19,9 +19,9 @@ func (self *TodoList) SetID(ID int) {
 
 // Helpers
 
-func (self TodoList) GetOwner(db *gobdb.DB) (User, error) {
+func (self TodoList) GetUser(db *gobdb.DB) (User, error) {
 	var user User
-	err := db.Get(&user, self.OwnerID)
+	err := db.Get(&user, self.UserID)
 	return user, err
 }
 

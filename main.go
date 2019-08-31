@@ -19,8 +19,8 @@ func main() {
 	db.Insert(&u1)
 
 	tdl1 := model.TodoList{
-		OwnerID: u1.GetID(),
-		Title:   "My Todo List",
+		UserID: u1.GetID(),
+		Title:  "My Todo List",
 	}
 	db.Insert(&tdl1)
 
@@ -28,7 +28,7 @@ func main() {
 	_ = db.Get(&tdlX1, tdl1.GetID())
 	fmt.Println(tdlX1)
 
-	uX1, err := tdlX1.GetOwner(db)
+	uX1, err := tdlX1.GetUser(db)
 	if err != nil {
 		log.Fatal(err)
 	}
