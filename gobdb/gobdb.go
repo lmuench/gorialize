@@ -33,7 +33,7 @@ func (db DB) Insert(resource Resource) {
 
 	counterPath := TableCounterPath(metadataPath)
 	var counter int
-	b, err := ioutil.ReadFile(counterPath)
+	b, err := db.SafeRead(counterPath)
 	if err == nil {
 		counter, err = strconv.Atoi(string(b))
 		if err != nil {
@@ -70,7 +70,7 @@ func (db DB) Get(resource interface{}, id int) error {
 		return err
 	}
 
-	b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
+	b, err := db.SafeRead(ResourcePath(tablePath, id))
 	if err != nil {
 		return err
 	}
@@ -92,6 +92,7 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 		return err
 	}
 
+	db.ThwartIOBasePathEscape(tablePath)
 	for _, f := range files {
 		if f.IsDir() {
 			continue
@@ -120,6 +121,7 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 func (db DB) Delete(resource Resource) error {
 	tablePath := db.TablePath(resource)
 	resourcePath := ResourcePath(tablePath, resource.GetID())
+	db.ThwartIOBasePathEscape(resourcePath)
 	err := os.Remove(resourcePath)
 	return err
 }
@@ -134,6 +136,7 @@ func (db DB) DeleteAll(resource Resource) error {
 		return err
 	}
 
+	db.ThwartIOBasePathEscape(tablePath)
 	for _, f := range files {
 		err = DeleteFileWithIntegerNameOnly(tablePath, f)
 		if err != nil {
@@ -201,10 +204,19 @@ func (db DB) ThwartIOBasePathEscape(ioOperationPath string) {
 	if !strings.HasPrefix(ioOperationPath, db.Path) {
 		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
 	}
+	if strings.Contains(ioOperationPath, "..") {
+		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
+	}
 }
 
 func (db DB) SafeWrite(path string, b []byte) error {
 	db.ThwartIOBasePathEscape(path)
 	err := ioutil.WriteFile(path, b, 0644)
 	return err
+}
+
+func (db DB) SafeRead(path string) ([]byte, error) {
+	db.ThwartIOBasePathEscape(path)
+	b, err := ioutil.ReadFile(path)
+	return b, err
 }
