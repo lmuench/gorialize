@@ -30,8 +30,9 @@ func (db DB) Insert(resource Resource) {
 		}
 	}
 
+	counterPath := TableCounterPath(metadataPath)
 	var counter int
-	b, err := ioutil.ReadFile(metadataPath + "/counter")
+	b, err := ioutil.ReadFile(counterPath)
 	if err == nil {
 		counter, err = strconv.Atoi(string(b))
 		if err != nil {
@@ -51,12 +52,12 @@ func (db DB) Insert(resource Resource) {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
+	err = ioutil.WriteFile(ResourcePath(tablePath, id), buf.Bytes(), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(metadataPath+"/"+"counter", []byte(strconv.Itoa(counter)), 0644)
+	err = ioutil.WriteFile(counterPath, []byte(strconv.Itoa(counter)), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,7 +96,11 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 			continue
 		}
 
-		b, err := ioutil.ReadFile(tablePath + "/" + f.Name())
+		id, err := strconv.Atoi(f.Name())
+		if err != nil {
+			continue
+		}
+		b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
 		if err != nil {
 			return err
 		}
@@ -166,7 +171,7 @@ func (db DB) Update(resource Resource) error {
 	}
 
 	id := resource.GetID()
-	err = ioutil.WriteFile(tablePath+"/"+strconv.Itoa(id), buf.Bytes(), 0644)
+	err = ioutil.WriteFile(ResourcePath(tablePath, id), buf.Bytes(), 0644)
 	return err
 }
 
@@ -181,6 +186,10 @@ func (db DB) TablePath(resource interface{}) string {
 
 func TableMetadataPath(tablePath string) string {
 	return tablePath + "/metadata"
+}
+
+func TableCounterPath(metadataPath string) string {
+	return metadataPath + "/counter"
 }
 
 func ResourcePath(tablePath string, id int) string {

@@ -21,7 +21,7 @@ func (self *User) SetID(ID int) {
 
 var db *DB
 
-func before() {
+func beforeEach() {
 	db = &DB{
 		Path: "/tmp/gobdb/gobdb_test",
 	}
@@ -33,7 +33,7 @@ func before() {
 }
 
 func TestInsertAndGet(t *testing.T) {
-	before()
+	beforeEach()
 
 	newUser := &User{
 		Name: "John Doe",
