@@ -22,12 +22,6 @@ func main() {
 		return
 	}
 
-	// exe, err := os.Executable()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// cwd := filepath.Dir(exe)
-
 	var err error
 	path := os.Args[1]
 	if len(os.Args) < 3 {
