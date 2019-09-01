@@ -6,28 +6,39 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
+	argCnt := len(os.Args) - 1
+	if argCnt < 1 {
 		PrintHelpText()
 		return
 	}
+	args := os.Args[1:]
 
 	var err error
-	command := os.Args[1]
-	path := os.Args[2]
+	command := args[0]
+	path := args[1]
 
 	switch command {
 	case "show", "s":
-		if len(os.Args) < 4 {
+		if argCnt < 3 {
 			err = ShowAll(path)
 		} else {
-			filename := os.Args[3]
+			filename := args[2]
 			err = ShowOne(path, filename)
 		}
 	case "generate", "g":
-		if len(os.Args) < 4 {
+		if argCnt < 3 || argCnt == 4 {
 			PrintHelpText()
+		}
+		model := args[2]
+		if argCnt > 4 {
+			switch args[3] {
+			case "referencing", "references", "ref", "belongs_to":
+				owner := args[4]
+				err = GenerateWithOwner(path, model, owner)
+			default:
+				PrintHelpText()
+			}
 		} else {
-			model := os.Args[3]
 			err = Generate(path, model)
 		}
 	default:
@@ -41,8 +52,9 @@ func main() {
 func PrintHelpText() {
 	fmt.Println(`
 	Commands:
-		generate [model path] [model name]    Generate a model
-    show [table path]                     Show a table
-    show [table path] [resource ID]       Show a resource
+    generate [model path] [model]                     Generate a model
+    generate [model path] [model] referencing [owner] Generate a model belonging to another model
+    show [table path]                                 Show a table
+    show [table path] [resource ID]                   Show a resource
 	`)
 }
