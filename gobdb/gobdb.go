@@ -9,7 +9,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 )
+
+var mutex sync.Mutex
 
 type DB struct {
 	Path string
@@ -21,6 +24,9 @@ type Resource interface {
 }
 
 func (db DB) Insert(resource Resource) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	tablePath := db.TablePath(resource)
 	metadataPath := TableMetadataPath(tablePath)
 
@@ -65,6 +71,9 @@ func (db DB) Insert(resource Resource) {
 }
 
 func (db DB) Get(resource interface{}, id int) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	tablePath := db.TablePath(resource)
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
@@ -82,6 +91,9 @@ func (db DB) Get(resource interface{}, id int) error {
 }
 
 func (db DB) GetAll(resource interface{}, callback func(resource interface{})) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	tablePath := db.TablePath(resource)
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return err
@@ -118,7 +130,31 @@ func (db DB) GetAll(resource interface{}, callback func(resource interface{})) e
 	return nil
 }
 
+func (db DB) Update(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	tablePath := db.TablePath(resource)
+	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
+		return err
+	}
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(resource)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	id := resource.GetID()
+	err = db.SafeWrite(ResourcePath(tablePath, id), buf.Bytes())
+	return err
+}
+
 func (db DB) Delete(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	tablePath := db.TablePath(resource)
 	resourcePath := ResourcePath(tablePath, resource.GetID())
 	db.ThwartIOBasePathEscape(resourcePath)
@@ -127,6 +163,9 @@ func (db DB) Delete(resource Resource) error {
 }
 
 func (db DB) DeleteAll(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	tablePath := db.TablePath(resource)
 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
 		return nil
@@ -159,24 +198,6 @@ func DeleteFileWithIntegerNameOnly(path string, f os.FileInfo) error {
 		return err
 	}
 	return nil
-}
-
-func (db DB) Update(resource Resource) error {
-	tablePath := db.TablePath(resource)
-	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-		return err
-	}
-
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(resource)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	id := resource.GetID()
-	err = db.SafeWrite(ResourcePath(tablePath, id), buf.Bytes())
-	return err
 }
 
 func ModelName(resource interface{}) string {
