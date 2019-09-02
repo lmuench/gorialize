@@ -64,7 +64,7 @@ func HandleShowCommand(command string, path string, args []string, argCnt int) e
 
 func PrintHelpText() {
 	fmt.Println(`
-	Commands:
+  Commands:
     generate [model path] [model]                     Generate a model
     generate [model path] [model] referencing [owner] Generate a model belonging to another model
     show [table path]                                 Show a table
