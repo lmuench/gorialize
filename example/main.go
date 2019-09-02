@@ -10,19 +10,30 @@ import (
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{Path: "/tmp/gobdb/example_dev"}
+	db := &gobdb.DB{
+		Path: "/tmp/gobdb/example_dev",
+		Log:  true,
+	}
 
 	u1 := model.User{
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(&u1)
+	err := db.Insert(&u1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(u1)
 
 	tdl1 := model.TodoList{
 		UserID: u1.GetID(),
 		Title:  "My Todo List",
 	}
-	db.Insert(&tdl1)
+	err = db.Insert(&tdl1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(tdl1)
 
 	var tdlX1 model.TodoList
 	_ = db.Get(&tdlX1, tdl1.GetID())
@@ -52,10 +63,15 @@ func main() {
 	}
 	fmt.Println(todoListsX2)
 
-	// for _, tdl := range todoListsX2 {
-	// 	err := db.Delete(&tdl)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
+	for _, tdl := range todoListsX2 {
+		err := db.Delete(&tdl)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	err = db.DeleteAll(&model.User{})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
