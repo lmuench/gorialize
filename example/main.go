@@ -10,21 +10,17 @@ import (
 
 // Example gobdb usage
 func main() {
-	db, err := gobdb.NewEncryptedDB(
+	db := gobdb.NewEncryptedDB(
 		"/tmp/gobdb/example_dev",
 		true,
 		"my secret passphrase",
 	)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	u1 := model.User{
 		Name: "John Doe",
 		Age:  42,
 	}
-	err = db.Insert(&u1)
+	err := db.Insert(&u1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,15 +64,15 @@ func main() {
 	}
 	fmt.Println(todoListsX2)
 
-	for _, tdl := range todoListsX2 {
-		err := db.Delete(&tdl)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	// for _, tdl := range todoListsX2 {
+	// 	err := db.Delete(&tdl)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 
-	err = db.DeleteAll(&model.User{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err = db.DeleteAll(&model.User{})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }

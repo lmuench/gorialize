@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha512"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -16,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 var mutex sync.Mutex
@@ -42,20 +42,17 @@ func NewDB(path string, log bool) *DB {
 	return db
 }
 
-func NewEncryptedDB(path string, log bool, passphrase string) (*DB, error) {
-	key, err := HashPassphrase([]byte(passphrase))
-	if err != nil {
-		return nil, err
-	}
+func NewEncryptedDB(path string, log bool, passphrase string) *DB {
+	h := HashPassphrase([]byte(passphrase))
 	var key32B [32]byte
-	copy(key32B[:], key[:32])
+	copy(key32B[:], h[:32])
 	db := &DB{
 		Path:      path,
 		Log:       log,
 		Encrypted: true,
 		Key:       &key32B,
 	}
-	return db, nil
+	return db
 }
 
 type Query struct {
@@ -567,8 +564,10 @@ func (q *Query) DecryptGobBuffer() {
 	)
 }
 
-func HashPassphrase(passphrase []byte) ([]byte, error) {
-	return bcrypt.GenerateFromPassword(passphrase, 10)
+func HashPassphrase(passphrase []byte) []byte {
+	h := hmac.New(sha512.New512_256, []byte("key"))
+	h.Write(passphrase)
+	return h.Sum(nil)
 }
 
 func (db DB) WriteToDisk(path string, b []byte) error {
