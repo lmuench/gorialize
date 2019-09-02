@@ -10,19 +10,24 @@ import (
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{Path: "/tmp/gobdb/example_dev"}
+	db := &gobdb.DB{
+		Path: "/tmp/gobdb/example_dev",
+		Log:  true,
+	}
 
 	u1 := model.User{
 		Name: "John Doe",
 		Age:  42,
 	}
 	db.Insert(&u1)
+	fmt.Println(u1)
 
 	tdl1 := model.TodoList{
 		UserID: u1.GetID(),
 		Title:  "My Todo List",
 	}
 	db.Insert(&tdl1)
+	fmt.Println(tdl1)
 
 	var tdlX1 model.TodoList
 	_ = db.Get(&tdlX1, tdl1.GetID())

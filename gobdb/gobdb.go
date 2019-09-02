@@ -23,6 +23,7 @@ type Resource interface {
 
 type DB struct {
 	Path string
+	Log  bool
 }
 
 type Query struct {
@@ -40,10 +41,29 @@ type Query struct {
 	TablePath    string
 }
 
-func (db DB) NewQuery(resource Resource) *Query {
+func (q Query) Log(operation string) {
+	if q.DB.Log {
+		fmt.Println("Operation    :", operation)
+		fmt.Println("Model        :", q.Model)
+		fmt.Println("ID           :", q.ID)
+		fmt.Println("Resource     :", q.Resource)
+		fmt.Println("Table Path   :", q.TablePath)
+		fmt.Println("Fatal Error  :", q.FatalError)
+	}
+}
+
+func (db DB) NewQueryWithoutID(resource Resource) *Query {
 	return &Query{
 		DB:       db,
 		Resource: resource,
+	}
+}
+
+func (db DB) NewQueryWithID(resource Resource, id int) *Query {
+	return &Query{
+		DB:       db,
+		Resource: resource,
+		ID:       id,
 	}
 }
 
@@ -51,7 +71,7 @@ func (db DB) Insert(resource Resource) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQuery(resource)
+	q := db.NewQueryWithoutID(resource)
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
 	q.BuildMetadataPath()
@@ -63,19 +83,21 @@ func (db DB) Insert(resource Resource) {
 	q.BuildResourcePath()
 	q.WriteResourceToDisk()
 	q.WriteCounterToDisk()
+	q.Log("insert")
 }
 
 func (db DB) Get(resource Resource, id int) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQuery(resource)
+	q := db.NewQueryWithID(resource, id)
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
 	q.ReadFromDiskIntoBuffer()
 	q.DecodeBufferIntoResource()
+	q.Log("Get")
 	return q.FatalError
 }
 
@@ -198,7 +220,6 @@ func (q *Query) ReflectModelNameFromResource() {
 		return
 	}
 	q.Model = reflect.TypeOf(q.Resource).String()[1:]
-	fmt.Println(q.Model)
 }
 
 func (q *Query) BuildTablePath() {
