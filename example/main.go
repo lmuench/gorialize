@@ -10,10 +10,11 @@ import (
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{
-		Path: "/tmp/gobdb/example_dev",
-		Log:  true,
-	}
+	db := gobdb.NewEncryptedDB(
+		"/tmp/gobdb/example_dev",
+		true,
+		"my secret passphrase",
+	)
 
 	u1 := model.User{
 		Name: "John Doe",
@@ -63,15 +64,15 @@ func main() {
 	}
 	fmt.Println(todoListsX2)
 
-	for _, tdl := range todoListsX2 {
-		err := db.Delete(&tdl)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	// for _, tdl := range todoListsX2 {
+	// 	err := db.Delete(&tdl)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 
-	err = db.DeleteAll(&model.User{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err = db.DeleteAll(&model.User{})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }

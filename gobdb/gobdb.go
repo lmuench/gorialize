@@ -2,9 +2,15 @@ package gobdb
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha512"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,8 +28,31 @@ type Resource interface {
 }
 
 type DB struct {
-	Path string
-	Log  bool
+	Path      string
+	Log       bool
+	Encrypted bool
+	Key       *[32]byte
+}
+
+func NewDB(path string, log bool) *DB {
+	db := &DB{
+		Path: path,
+		Log:  log,
+	}
+	return db
+}
+
+func NewEncryptedDB(path string, log bool, passphrase string) *DB {
+	h := HashPassphrase([]byte(passphrase))
+	var key32B [32]byte
+	copy(key32B[:], h[:32])
+	db := &DB{
+		Path:      path,
+		Log:       log,
+		Encrypted: true,
+		Key:       &key32B,
+	}
+	return db
 }
 
 type Query struct {
@@ -88,6 +117,7 @@ func (db DB) Insert(resource Resource) error {
 	q.ReadCounterFromDisk()
 	q.IncrementCounterAndSetID()
 	q.EncodeResourceToGob()
+	q.EncryptGobBuffer()
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
 	q.WriteCounterToDisk()
@@ -106,6 +136,7 @@ func (db DB) Get(resource Resource, id int) error {
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
 	q.ReadGobFromDisk()
+	q.DecryptGobBuffer()
 	q.DecodeGobToResource()
 	q.Log()
 	return q.FatalError
@@ -132,6 +163,7 @@ func (db DB) GetAll(resource Resource, callback func(resource interface{})) erro
 		}
 		q.BuildResourcePath()
 		q.ReadGobFromDisk()
+		q.DecryptGobBuffer()
 		q.DecodeGobToResource()
 		q.PassResourceToCallback(callback)
 		q.Log()
@@ -151,6 +183,7 @@ func (db DB) Update(resource Resource) error {
 	q.BuildResourcePath()
 	q.ExitIfResourceNotExist()
 	q.EncodeResourceToGob()
+	q.EncryptGobBuffer()
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
 	q.Log()
@@ -167,6 +200,7 @@ func (db DB) Upsert(resource Resource) error {
 	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.EncodeResourceToGob()
+	q.EncryptGobBuffer()
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
 	q.Log()
@@ -464,6 +498,76 @@ func (q *Query) ThwartIOBasePathEscape() {
 		log.Fatal("Thwarted IO operation with path containing '..'")
 	}
 	q.SafeIOPath = true
+}
+
+func (q *Query) EncryptGobBuffer() {
+	if q.FatalError != nil {
+		return
+	}
+	if !q.DB.Encrypted {
+		return
+	}
+	if len(q.GobBuffer) == 0 {
+		q.FatalError = errors.New("Gob buffer empty")
+		return
+	}
+	if q.DB.Key == nil {
+		q.FatalError = errors.New("Encryption key missing")
+	}
+	var block cipher.Block
+	block, q.FatalError = aes.NewCipher(q.DB.Key[:])
+	if q.FatalError != nil {
+		return
+	}
+	var gcm cipher.AEAD
+	gcm, q.FatalError = cipher.NewGCM(block)
+	if q.FatalError != nil {
+		return
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	_, q.FatalError = io.ReadFull(rand.Reader, nonce)
+	if q.FatalError != nil {
+		return
+	}
+	q.GobBuffer = gcm.Seal(nonce, nonce, q.GobBuffer, nil)
+}
+
+func (q *Query) DecryptGobBuffer() {
+	if q.FatalError != nil {
+		return
+	}
+	if !q.DB.Encrypted {
+		return
+	}
+	if q.DB.Key == nil {
+		q.FatalError = errors.New("Decryption key missing")
+	}
+	var block cipher.Block
+	block, q.FatalError = aes.NewCipher(q.DB.Key[:])
+	if q.FatalError != nil {
+		return
+	}
+	var gcm cipher.AEAD
+	gcm, q.FatalError = cipher.NewGCM(block)
+	if q.FatalError != nil {
+		return
+	}
+	if len(q.GobBuffer) < gcm.NonceSize() {
+		q.FatalError = errors.New("Gob buffer smaller than nonce")
+		return
+	}
+	q.GobBuffer, q.FatalError = gcm.Open(
+		nil,
+		q.GobBuffer[:gcm.NonceSize()],
+		q.GobBuffer[gcm.NonceSize():],
+		nil,
+	)
+}
+
+func HashPassphrase(passphrase []byte) []byte {
+	h := hmac.New(sha512.New512_256, []byte("key"))
+	h.Write(passphrase)
+	return h.Sum(nil)
 }
 
 func (db DB) WriteToDisk(path string, b []byte) error {

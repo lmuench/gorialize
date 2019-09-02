@@ -21,14 +21,13 @@ func (self *User) SetID(ID int) {
 var db *DB
 
 func beforeEach() {
-	db = &DB{
-		Path: "/tmp/gobdb/gobdb_test",
-	}
+	db = NewEncryptedDB(
+		"/tmp/gobdb/gobdb_test",
+		true,
+		"password123",
+	)
 
-	// err := db.DeleteAll(&User{})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	_ = db.DeleteAll(&User{})
 }
 
 func TestInsertAndGet(t *testing.T) {
