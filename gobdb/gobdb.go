@@ -97,7 +97,7 @@ func (db DB) Get(resource Resource, id int) error {
 	q.BuildResourcePath()
 	q.ReadFromDiskIntoBuffer()
 	q.DecodeBufferIntoResource()
-	q.Log("Get")
+	q.Log("get")
 	return q.FatalError
 }
 
