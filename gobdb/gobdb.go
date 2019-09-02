@@ -135,11 +135,10 @@ func (db DB) Update(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithoutID(resource)
+	q := db.NewQueryWithID(resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
 	q.ExitIfTableNotExist()
-	q.ID = resource.GetID()
 	q.BuildResourcePath()
 	q.ExitIfResourceNotExist()
 	q.EncodeResource()
@@ -153,27 +152,31 @@ func (db DB) Upsert(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithoutID(resource)
+	q := db.NewQueryWithID(resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
 	q.ExitIfTableNotExist()
 	q.EncodeResource()
 	q.BuildResourcePath()
 	q.WriteResourceToDisk()
-	q.Log("update")
+	q.Log("upsert")
 	return q.FatalError
 }
 
-// func (db DB) Delete(resource Resource) error {
-// 	mutex.Lock()
-// 	defer mutex.Unlock()
+func (db DB) Delete(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-// 	tablePath := db.TablePath(resource)
-// 	resourcePath := ResourcePath(tablePath, resource.GetID())
-// 	db.ThwartIOBasePathEscape(resourcePath)
-// 	err := os.Remove(resourcePath)
-// 	return err
-// }
+	q := db.NewQueryWithoutID(resource)
+	q.ReflectModelNameFromResource()
+	q.BuildTablePath()
+	q.ExitIfTableNotExist()
+	q.BuildResourcePath()
+	db.ThwartIOBasePathEscape(q.ResourcePath)
+	q.FatalError = os.Remove(q.ResourcePath)
+	q.Log("delete")
+	return q.FatalError
+}
 
 // func (db DB) DeleteAll(resource Resource) error {
 // 	mutex.Lock()
