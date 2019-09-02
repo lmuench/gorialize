@@ -68,7 +68,7 @@ func (db DB) NewQueryWithID(resource Resource, id int) *Query {
 	}
 }
 
-func (db DB) Insert(resource Resource) {
+func (db DB) Insert(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -85,6 +85,7 @@ func (db DB) Insert(resource Resource) {
 	q.WriteResourceToDisk()
 	q.WriteCounterToDisk()
 	q.Log("insert")
+	return q.FatalError
 }
 
 func (db DB) Get(resource Resource, id int) error {
@@ -127,29 +128,41 @@ func (db DB) GetAll(resource Resource, callback func(resource interface{})) erro
 		q.PassResourceToCallback(callback)
 		q.Log("get")
 	}
-	return nil
+	return q.FatalError
 }
 
-// func (db DB) Update(resource Resource) error {
-// 	mutex.Lock()
-// 	defer mutex.Unlock()
+func (db DB) Update(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-// 	tablePath := db.TablePath(resource)
-// 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-// 		return err
-// 	}
+	q := db.NewQueryWithoutID(resource)
+	q.ReflectModelNameFromResource()
+	q.BuildTablePath()
+	q.ExitIfTableNotExist()
+	q.ID = resource.GetID()
+	q.BuildResourcePath()
+	q.ExitIfResourceNotExist()
+	q.EncodeResource()
+	q.BuildResourcePath()
+	q.WriteResourceToDisk()
+	q.Log("update")
+	return q.FatalError
+}
 
-// 	var buf bytes.Buffer
-// 	enc := gob.NewEncoder(&buf)
-// 	err := enc.Encode(resource)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+func (db DB) Upsert(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-// 	id := resource.GetID()
-// 	err = db.SafeWrite(ResourcePath(tablePath, id), buf.Bytes())
-// 	return err
-// }
+	q := db.NewQueryWithoutID(resource)
+	q.ReflectModelNameFromResource()
+	q.BuildTablePath()
+	q.ExitIfTableNotExist()
+	q.EncodeResource()
+	q.BuildResourcePath()
+	q.WriteResourceToDisk()
+	q.Log("update")
+	return q.FatalError
+}
 
 // func (db DB) Delete(resource Resource) error {
 // 	mutex.Lock()
@@ -341,6 +354,19 @@ func (q *Query) ExitIfTableNotExist() {
 	}
 	if _, err := os.Stat(q.TablePath); os.IsNotExist(err) {
 		q.FatalError = errors.New("Table does not exist")
+	}
+}
+
+func (q *Query) ExitIfResourceNotExist() {
+	if q.FatalError != nil {
+		return
+	}
+	if q.ResourcePath == "" {
+		q.FatalError = errors.New("Resource path missing")
+		return
+	}
+	if _, err := os.Stat(q.ResourcePath); os.IsNotExist(err) {
+		q.FatalError = errors.New("Resource does not exist")
 	}
 }
 

@@ -38,10 +38,13 @@ func TestInsertAndGet(t *testing.T) {
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(newUser)
+	err := db.Insert(newUser)
+	if err != nil {
+		t.Error(err)
+	}
 
 	storedUser := &User{}
-	err := db.Get(storedUser, newUser.GetID())
+	err = db.Get(storedUser, newUser.GetID())
 	if err != nil {
 		t.Error(err)
 	}

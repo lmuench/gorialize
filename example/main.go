@@ -19,14 +19,20 @@ func main() {
 		Name: "John Doe",
 		Age:  42,
 	}
-	db.Insert(&u1)
+	err := db.Insert(&u1)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(u1)
 
 	tdl1 := model.TodoList{
 		UserID: u1.GetID(),
 		Title:  "My Todo List",
 	}
-	db.Insert(&tdl1)
+	err = db.Insert(&tdl1)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(tdl1)
 
 	var tdlX1 model.TodoList
