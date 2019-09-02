@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,7 +28,7 @@ type DB struct {
 type Query struct {
 	FatalError   error
 	DB           DB
-	Writer       *bytes.Buffer
+	Writer       bytes.Buffer
 	ReadBuffer   []byte
 	Model        string
 	Resource     Resource
@@ -60,7 +61,8 @@ func (db DB) Insert(resource Resource) {
 	q.IncrementCounterAndSetID()
 	q.EncodeResource()
 	q.BuildResourcePath()
-	q.WriteResourceAndCounterToDisk()
+	q.WriteResourceToDisk()
+	q.WriteCounterToDisk()
 }
 
 func (db DB) Get(resource Resource, id int) error {
@@ -68,6 +70,7 @@ func (db DB) Get(resource Resource, id int) error {
 	defer mutex.Unlock()
 
 	q := db.NewQuery(resource)
+	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
@@ -190,11 +193,12 @@ func (q *Query) ReflectModelNameFromResource() {
 	if q.FatalError != nil {
 		return
 	}
-	if q.DB.Path == "" {
-		q.FatalError = errors.New("DB path missing")
+	if q.Resource == nil {
+		q.FatalError = errors.New("Resource missing")
 		return
 	}
 	q.Model = reflect.TypeOf(q.Resource).String()[1:]
+	fmt.Println(q.Model)
 }
 
 func (q *Query) BuildTablePath() {
@@ -262,14 +266,6 @@ func (q *Query) BuildResourcePath() {
 	q.ResourcePath = q.TablePath + "/" + strconv.Itoa(q.ID)
 }
 
-func (q *Query) EncodeResource() {
-	if q.FatalError != nil {
-		return
-	}
-	enc := gob.NewEncoder(q.Writer)
-	q.FatalError = enc.Encode(q.Resource)
-}
-
 func (q *Query) ReadCounterFromDisk() {
 	if q.FatalError != nil {
 		return
@@ -278,10 +274,11 @@ func (q *Query) ReadCounterFromDisk() {
 		q.FatalError = errors.New("Counter path missing")
 		return
 	}
-	var b []byte
-	b, q.FatalError = q.DB.SafeRead(q.CounterPath)
-	if q.FatalError == nil {
+	b, err := q.DB.SafeRead(q.CounterPath)
+	if err == nil {
 		q.Counter, q.FatalError = strconv.Atoi(string(b))
+	} else {
+		q.Counter = 0
 	}
 }
 
@@ -294,10 +291,31 @@ func (q *Query) IncrementCounterAndSetID() {
 	q.Resource.SetID(q.ID)
 }
 
-func (q *Query) WriteResourceAndCounterToDisk() {
-	err := q.DB.SafeWrite(q.ResourcePath, q.Writer.Bytes())
-	if err != nil {
-		q.FatalError = err
+func (q *Query) EncodeResource() {
+	if q.FatalError != nil {
+		return
+	}
+	enc := gob.NewEncoder(&q.Writer)
+	q.FatalError = enc.Encode(q.Resource)
+}
+
+func (q *Query) WriteResourceToDisk() {
+	if q.FatalError != nil {
+		return
+	}
+	if q.ResourcePath == "" {
+		q.FatalError = errors.New("Resource path missing")
+		return
+	}
+	q.FatalError = q.DB.SafeWrite(q.ResourcePath, q.Writer.Bytes())
+}
+
+func (q *Query) WriteCounterToDisk() {
+	if q.FatalError != nil {
+		return
+	}
+	if q.CounterPath == "" {
+		q.FatalError = errors.New("Counter path missing")
 		return
 	}
 	q.FatalError = q.DB.SafeWrite(q.CounterPath, []byte(strconv.Itoa(q.Counter)))

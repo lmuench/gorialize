@@ -1,7 +1,6 @@
 package gobdb
 
 import (
-	"log"
 	"testing"
 )
 
@@ -26,10 +25,10 @@ func beforeEach() {
 		Path: "/tmp/gobdb/gobdb_test",
 	}
 
-	err := db.DeleteAll(&User{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := db.DeleteAll(&User{})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func TestInsertAndGet(t *testing.T) {

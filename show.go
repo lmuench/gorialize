@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/drosseau/degob"
-	"github.com/lmuench/gobdb/gobdb"
 )
 
 func ShowOne(tablePath string, filename string) error {
@@ -15,7 +14,7 @@ func ShowOne(tablePath string, filename string) error {
 	if err != nil {
 		return err
 	}
-	b, err := ioutil.ReadFile(gobdb.ResourcePath(tablePath, id))
+	b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func ShowAll(tablePath string) error {
 		if err != nil {
 			continue
 		}
-		b, err := ioutil.ReadFile(gobdb.ResourcePath(tablePath, id))
+		b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
 		if err != nil {
 			return err
 		}
@@ -71,4 +70,8 @@ func ShowAll(tablePath string) error {
 		}
 	}
 	return nil
+}
+
+func ResourcePath(tablePath string, id int) string {
+	return tablePath + "/" + strconv.Itoa(id)
 }
