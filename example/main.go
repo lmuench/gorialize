@@ -10,16 +10,21 @@ import (
 
 // Example gobdb usage
 func main() {
-	db := &gobdb.DB{
-		Path: "/tmp/gobdb/example_dev",
-		Log:  true,
+	db, err := gobdb.NewEncryptedDB(
+		"/tmp/gobdb/example_dev",
+		true,
+		"my secret passphrase",
+	)
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	u1 := model.User{
 		Name: "John Doe",
 		Age:  42,
 	}
-	err := db.Insert(&u1)
+	err = db.Insert(&u1)
 	if err != nil {
 		log.Fatal(err)
 	}
