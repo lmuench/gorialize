@@ -31,7 +31,7 @@ type Query struct {
 	DB            DB
 	Operation     string
 	Writer        bytes.Buffer
-	ReadBuffer    []byte
+	GobBuffer     []byte
 	Model         string
 	Resource      Resource
 	ID            int
@@ -87,9 +87,9 @@ func (db DB) Insert(resource Resource) error {
 	q.BuildCounterPath()
 	q.ReadCounterFromDisk()
 	q.IncrementCounterAndSetID()
-	q.EncodeResource()
+	q.EncodeResourceToGob()
 	q.BuildResourcePath()
-	q.WriteResourceToDisk()
+	q.WriteGobToDisk()
 	q.WriteCounterToDisk()
 	q.Log()
 	return q.FatalError
@@ -105,8 +105,8 @@ func (db DB) Get(resource Resource, id int) error {
 	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
-	q.ReadFromDiskIntoBuffer()
-	q.DecodeBufferIntoResource()
+	q.ReadGobFromDisk()
+	q.DecodeGobToResource()
 	q.Log()
 	return q.FatalError
 }
@@ -131,8 +131,8 @@ func (db DB) GetAll(resource Resource, callback func(resource interface{})) erro
 			continue
 		}
 		q.BuildResourcePath()
-		q.ReadFromDiskIntoBuffer()
-		q.DecodeBufferIntoResource()
+		q.ReadGobFromDisk()
+		q.DecodeGobToResource()
 		q.PassResourceToCallback(callback)
 		q.Log()
 	}
@@ -150,9 +150,9 @@ func (db DB) Update(resource Resource) error {
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
 	q.ExitIfResourceNotExist()
-	q.EncodeResource()
+	q.EncodeResourceToGob()
 	q.BuildResourcePath()
-	q.WriteResourceToDisk()
+	q.WriteGobToDisk()
 	q.Log()
 	return q.FatalError
 }
@@ -166,9 +166,9 @@ func (db DB) Upsert(resource Resource) error {
 	q.BuildTablePath()
 	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
-	q.EncodeResource()
+	q.EncodeResourceToGob()
 	q.BuildResourcePath()
-	q.WriteResourceToDisk()
+	q.WriteGobToDisk()
 	q.Log()
 	return q.FatalError
 }
@@ -320,15 +320,18 @@ func (q *Query) IncrementCounterAndSetID() {
 	q.Resource.SetID(q.ID)
 }
 
-func (q *Query) EncodeResource() {
+func (q *Query) EncodeResourceToGob() {
 	if q.FatalError != nil {
 		return
 	}
 	enc := gob.NewEncoder(&q.Writer)
 	q.FatalError = enc.Encode(q.Resource)
+	if q.FatalError == nil {
+		q.GobBuffer = q.Writer.Bytes()
+	}
 }
 
-func (q *Query) WriteResourceToDisk() {
+func (q *Query) WriteGobToDisk() {
 	if q.FatalError != nil {
 		return
 	}
@@ -340,7 +343,7 @@ func (q *Query) WriteResourceToDisk() {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.FatalError = q.DB.WriteToDisk(q.ResourcePath, q.Writer.Bytes())
+	q.FatalError = q.DB.WriteToDisk(q.ResourcePath, q.GobBuffer)
 }
 
 func (q *Query) WriteCounterToDisk() {
@@ -384,7 +387,7 @@ func (q *Query) ExitIfResourceNotExist() {
 	}
 }
 
-func (q *Query) ReadFromDiskIntoBuffer() {
+func (q *Query) ReadGobFromDisk() {
 	if q.FatalError != nil {
 		return
 	}
@@ -396,18 +399,18 @@ func (q *Query) ReadFromDiskIntoBuffer() {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.ReadBuffer, q.FatalError = q.DB.ReadFromDisk(q.ResourcePath)
+	q.GobBuffer, q.FatalError = q.DB.ReadFromDisk(q.ResourcePath)
 }
 
-func (q *Query) DecodeBufferIntoResource() {
+func (q *Query) DecodeGobToResource() {
 	if q.FatalError != nil {
 		return
 	}
-	if len(q.ReadBuffer) == 0 {
-		q.FatalError = errors.New("Read buffer empty")
+	if len(q.GobBuffer) == 0 {
+		q.FatalError = errors.New("Gob buffer empty")
 		return
 	}
-	reader := bytes.NewReader(q.ReadBuffer)
+	reader := bytes.NewReader(q.GobBuffer)
 	dec := gob.NewDecoder(reader)
 	q.FatalError = dec.Decode(q.Resource)
 }
