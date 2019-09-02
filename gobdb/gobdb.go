@@ -29,6 +29,7 @@ type DB struct {
 type Query struct {
 	FatalError    error
 	DB            DB
+	Operation     string
 	Writer        bytes.Buffer
 	ReadBuffer    []byte
 	Model         string
@@ -39,32 +40,37 @@ type Query struct {
 	MetadataPath  string
 	ResourcePath  string
 	TablePath     string
+	SafeIOPath    bool
 	TableFileInfo []os.FileInfo
 }
 
-func (q Query) Log(operation string) {
+func (q Query) Log() {
 	if q.DB.Log {
-		fmt.Println("Operation    :", operation)
+		fmt.Println()
+		fmt.Println("Operation    :", q.Operation)
 		fmt.Println("Model        :", q.Model)
 		fmt.Println("ID           :", q.ID)
 		fmt.Println("Resource     :", q.Resource)
 		fmt.Println("Table Path   :", q.TablePath)
 		fmt.Println("Fatal Error  :", q.FatalError)
+		fmt.Println()
 	}
 }
 
-func (db DB) NewQueryWithoutID(resource Resource) *Query {
+func (db DB) NewQueryWithoutID(operation string, resource Resource) *Query {
 	return &Query{
-		DB:       db,
-		Resource: resource,
+		DB:        db,
+		Operation: operation,
+		Resource:  resource,
 	}
 }
 
-func (db DB) NewQueryWithID(resource Resource, id int) *Query {
+func (db DB) NewQueryWithID(operation string, resource Resource, id int) *Query {
 	return &Query{
-		DB:       db,
-		Resource: resource,
-		ID:       id,
+		DB:        db,
+		Operation: operation,
+		Resource:  resource,
+		ID:        id,
 	}
 }
 
@@ -72,9 +78,10 @@ func (db DB) Insert(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithoutID(resource)
+	q := db.NewQueryWithoutID("insert", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
 	q.BuildMetadataPath()
 	q.CreateMetadataDirectoryIfNotExist()
 	q.BuildCounterPath()
@@ -84,7 +91,7 @@ func (db DB) Insert(resource Resource) error {
 	q.BuildResourcePath()
 	q.WriteResourceToDisk()
 	q.WriteCounterToDisk()
-	q.Log("insert")
+	q.Log()
 	return q.FatalError
 }
 
@@ -92,14 +99,15 @@ func (db DB) Get(resource Resource, id int) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithID(resource, id)
+	q := db.NewQueryWithID("get", resource, id)
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
-	q.SafeReadFromDiskIntoBuffer()
+	q.ReadFromDiskIntoBuffer()
 	q.DecodeBufferIntoResource()
-	q.Log("get")
+	q.Log()
 	return q.FatalError
 }
 
@@ -108,10 +116,10 @@ func (db DB) GetAll(resource Resource, callback func(resource interface{})) erro
 	defer mutex.Unlock()
 	var err error
 
-	q := db.NewQueryWithoutID(resource)
+	q := db.NewQueryWithoutID("get", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
-	db.ThwartIOBasePathEscape(q.TablePath)
+	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.ReadTableFileinfo()
 	for _, f := range q.TableFileInfo {
@@ -123,10 +131,10 @@ func (db DB) GetAll(resource Resource, callback func(resource interface{})) erro
 			continue
 		}
 		q.BuildResourcePath()
-		q.UnsafeReadFromDiskIntoBuffer()
+		q.ReadFromDiskIntoBuffer()
 		q.DecodeBufferIntoResource()
 		q.PassResourceToCallback(callback)
-		q.Log("get")
+		q.Log()
 	}
 	return q.FatalError
 }
@@ -135,16 +143,17 @@ func (db DB) Update(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithID(resource, resource.GetID())
+	q := db.NewQueryWithID("update", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
 	q.ExitIfResourceNotExist()
 	q.EncodeResource()
 	q.BuildResourcePath()
 	q.WriteResourceToDisk()
-	q.Log("update")
+	q.Log()
 	return q.FatalError
 }
 
@@ -152,14 +161,15 @@ func (db DB) Upsert(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithID(resource, resource.GetID())
+	q := db.NewQueryWithID("upsert", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.EncodeResource()
 	q.BuildResourcePath()
 	q.WriteResourceToDisk()
-	q.Log("upsert")
+	q.Log()
 	return q.FatalError
 }
 
@@ -167,54 +177,43 @@ func (db DB) Delete(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := db.NewQueryWithoutID(resource)
+	q := db.NewQueryWithID("delete", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
-	db.ThwartIOBasePathEscape(q.ResourcePath)
+	q.ThwartIOBasePathEscape()
 	q.FatalError = os.Remove(q.ResourcePath)
-	q.Log("delete")
+	q.Log()
 	return q.FatalError
 }
 
-// func (db DB) DeleteAll(resource Resource) error {
-// 	mutex.Lock()
-// 	defer mutex.Unlock()
+func (db DB) DeleteAll(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	var err error
 
-// 	tablePath := db.TablePath(resource)
-// 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-// 		return nil
-// 	}
-// 	files, err := ioutil.ReadDir(tablePath)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	db.ThwartIOBasePathEscape(tablePath)
-// 	for _, f := range files {
-// 		err = DeleteFileWithIntegerNameOnly(tablePath, f)
-// 		if err != nil {
-// 			log.Println(err)
-// 		}
-// 	}
-// 	return nil
-// }
-
-// func DeleteFileWithIntegerNameOnly(path string, f os.FileInfo) error {
-// 	if f.IsDir() {
-// 		return nil
-// 	}
-// 	id, err := strconv.Atoi(f.Name())
-// 	if err != nil {
-// 		return nil
-// 	}
-// 	err = os.Remove(ResourcePath(path, id))
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+	q := db.NewQueryWithoutID("delete", resource)
+	q.ReflectModelNameFromResource()
+	q.BuildTablePath()
+	q.ThwartIOBasePathEscape()
+	q.ExitIfTableNotExist()
+	q.ReadTableFileinfo()
+	for _, f := range q.TableFileInfo {
+		if f.IsDir() {
+			continue
+		}
+		q.ID, err = strconv.Atoi(f.Name())
+		if err != nil {
+			continue
+		}
+		q.BuildResourcePath()
+		q.DeleteFromDisk()
+		q.Log()
+	}
+	return q.FatalError
+}
 
 func (q *Query) ReflectModelNameFromResource() {
 	if q.FatalError != nil {
@@ -296,11 +295,15 @@ func (q *Query) ReadCounterFromDisk() {
 	if q.FatalError != nil {
 		return
 	}
+	if !q.SafeIOPath {
+		q.FatalError = errors.New("IO path not marked as safe")
+		return
+	}
 	if q.CounterPath == "" {
 		q.FatalError = errors.New("Counter path missing")
 		return
 	}
-	b, err := q.DB.SafeRead(q.CounterPath)
+	b, err := q.DB.ReadFromDisk(q.CounterPath)
 	if err == nil {
 		q.Counter, q.FatalError = strconv.Atoi(string(b))
 	} else {
@@ -329,22 +332,30 @@ func (q *Query) WriteResourceToDisk() {
 	if q.FatalError != nil {
 		return
 	}
+	if !q.SafeIOPath {
+		q.FatalError = errors.New("Write path not marked as safe")
+		return
+	}
 	if q.ResourcePath == "" {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.FatalError = q.DB.SafeWrite(q.ResourcePath, q.Writer.Bytes())
+	q.FatalError = q.DB.WriteToDisk(q.ResourcePath, q.Writer.Bytes())
 }
 
 func (q *Query) WriteCounterToDisk() {
 	if q.FatalError != nil {
 		return
 	}
+	if !q.SafeIOPath {
+		q.FatalError = errors.New("Write path not marked as safe")
+		return
+	}
 	if q.CounterPath == "" {
 		q.FatalError = errors.New("Counter path missing")
 		return
 	}
-	q.FatalError = q.DB.SafeWrite(q.CounterPath, []byte(strconv.Itoa(q.Counter)))
+	q.FatalError = q.DB.WriteToDisk(q.CounterPath, []byte(strconv.Itoa(q.Counter)))
 }
 
 func (q *Query) ExitIfTableNotExist() {
@@ -373,26 +384,19 @@ func (q *Query) ExitIfResourceNotExist() {
 	}
 }
 
-func (q *Query) SafeReadFromDiskIntoBuffer() {
+func (q *Query) ReadFromDiskIntoBuffer() {
 	if q.FatalError != nil {
+		return
+	}
+	if !q.SafeIOPath {
+		q.FatalError = errors.New("IO path not marked as safe")
 		return
 	}
 	if q.ResourcePath == "" {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.ReadBuffer, q.FatalError = q.DB.SafeRead(q.ResourcePath)
-}
-
-func (q *Query) UnsafeReadFromDiskIntoBuffer() {
-	if q.FatalError != nil {
-		return
-	}
-	if q.ResourcePath == "" {
-		q.FatalError = errors.New("Resource path missing")
-		return
-	}
-	q.ReadBuffer, q.FatalError = ioutil.ReadFile(q.ResourcePath)
+	q.ReadBuffer, q.FatalError = q.DB.ReadFromDisk(q.ResourcePath)
 }
 
 func (q *Query) DecodeBufferIntoResource() {
@@ -410,6 +414,10 @@ func (q *Query) DecodeBufferIntoResource() {
 
 func (q *Query) ReadTableFileinfo() {
 	if q.FatalError != nil {
+		return
+	}
+	if !q.SafeIOPath {
+		q.FatalError = errors.New("IO path not marked as safe")
 		return
 	}
 	if q.TablePath == "" {
@@ -430,23 +438,37 @@ func (q *Query) PassResourceToCallback(callback func(resource interface{})) {
 	callback(q.Resource)
 }
 
-func (db DB) ThwartIOBasePathEscape(ioOperationPath string) {
-	if !strings.HasPrefix(ioOperationPath, db.Path) {
-		log.Fatal("Thwarted attempted IO operation outside of", db.Path)
+func (q *Query) DeleteFromDisk() {
+	if q.FatalError != nil {
+		return
 	}
-	if strings.Contains(ioOperationPath, "..") {
-		log.Fatal("Thwarted attempted IO operation with path containing '..'")
+	if q.ResourcePath == "" {
+		q.FatalError = errors.New("Resource path missing")
+		return
 	}
+	q.FatalError = os.Remove(q.ResourcePath)
 }
 
-func (db DB) SafeWrite(path string, b []byte) error {
-	db.ThwartIOBasePathEscape(path)
+func (q *Query) ThwartIOBasePathEscape() {
+	if !strings.HasPrefix(q.TablePath, q.DB.Path) {
+		q.SafeIOPath = false
+		q.Log()
+		log.Fatal("Thwarted IO operation outside of ", q.DB.Path)
+	}
+	if strings.Contains(q.TablePath, "..") {
+		q.SafeIOPath = false
+		q.Log()
+		log.Fatal("Thwarted IO operation with path containing '..'")
+	}
+	q.SafeIOPath = true
+}
+
+func (db DB) WriteToDisk(path string, b []byte) error {
 	err := ioutil.WriteFile(path, b, 0644)
 	return err
 }
 
-func (db DB) SafeRead(path string) ([]byte, error) {
-	db.ThwartIOBasePathEscape(path)
+func (db DB) ReadFromDisk(path string) ([]byte, error) {
 	b, err := ioutil.ReadFile(path)
 	return b, err
 }

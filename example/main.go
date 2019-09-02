@@ -51,22 +51,27 @@ func main() {
 	}
 	fmt.Println(todoListsX1)
 
-	// tdlX1.Title = "A different title"
-	// err = db.Update(&tdlX1)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	tdlX1.Title = "A different title"
+	err = db.Update(&tdlX1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// todoListsX2, err := model.GetAllTodoLists(db)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(todoListsX2)
+	todoListsX2, err := model.GetAllTodoLists(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(todoListsX2)
 
-	// for _, tdl := range todoListsX2 {
-	// 	err := db.Delete(&tdl)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
+	for _, tdl := range todoListsX2 {
+		err := db.Delete(&tdl)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	err = db.DeleteAll(&model.User{})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
