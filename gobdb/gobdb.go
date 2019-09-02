@@ -27,18 +27,19 @@ type DB struct {
 }
 
 type Query struct {
-	FatalError   error
-	DB           DB
-	Writer       bytes.Buffer
-	ReadBuffer   []byte
-	Model        string
-	Resource     Resource
-	ID           int
-	Counter      int
-	CounterPath  string
-	MetadataPath string
-	ResourcePath string
-	TablePath    string
+	FatalError    error
+	DB            DB
+	Writer        bytes.Buffer
+	ReadBuffer    []byte
+	Model         string
+	Resource      Resource
+	ID            int
+	Counter       int
+	CounterPath   string
+	MetadataPath  string
+	ResourcePath  string
+	TablePath     string
+	TableFileInfo []os.FileInfo
 }
 
 func (q Query) Log(operation string) {
@@ -95,51 +96,39 @@ func (db DB) Get(resource Resource, id int) error {
 	q.BuildTablePath()
 	q.ExitIfTableNotExist()
 	q.BuildResourcePath()
-	q.ReadFromDiskIntoBuffer()
+	q.SafeReadFromDiskIntoBuffer()
 	q.DecodeBufferIntoResource()
 	q.Log("get")
 	return q.FatalError
 }
 
-// func (db DB) GetAll(resource interface{}, callback func(resource interface{})) error {
-// 	mutex.Lock()
-// 	defer mutex.Unlock()
+func (db DB) GetAll(resource Resource, callback func(resource interface{})) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	var err error
 
-// 	tablePath := db.TablePath(resource)
-// 	if _, err := os.Stat(tablePath); os.IsNotExist(err) {
-// 		return err
-// 	}
-
-// 	files, err := ioutil.ReadDir(tablePath)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	db.ThwartIOBasePathEscape(tablePath)
-// 	for _, f := range files {
-// 		if f.IsDir() {
-// 			continue
-// 		}
-
-// 		id, err := strconv.Atoi(f.Name())
-// 		if err != nil {
-// 			continue
-// 		}
-// 		b, err := ioutil.ReadFile(ResourcePath(tablePath, id))
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		buf := bytes.NewReader(b)
-// 		dec := gob.NewDecoder(buf)
-// 		err = dec.Decode(resource)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		callback(resource)
-// 	}
-// 	return nil
-// }
+	q := db.NewQueryWithoutID(resource)
+	q.ReflectModelNameFromResource()
+	q.BuildTablePath()
+	db.ThwartIOBasePathEscape(q.TablePath)
+	q.ExitIfTableNotExist()
+	q.ReadTableFileinfo()
+	for _, f := range q.TableFileInfo {
+		if f.IsDir() {
+			continue
+		}
+		q.ID, err = strconv.Atoi(f.Name())
+		if err != nil {
+			continue
+		}
+		q.BuildResourcePath()
+		q.UnsafeReadFromDiskIntoBuffer()
+		q.DecodeBufferIntoResource()
+		q.PassResourceToCallback(callback)
+		q.Log("get")
+	}
+	return nil
+}
 
 // func (db DB) Update(resource Resource) error {
 // 	mutex.Lock()
@@ -355,7 +344,7 @@ func (q *Query) ExitIfTableNotExist() {
 	}
 }
 
-func (q *Query) ReadFromDiskIntoBuffer() {
+func (q *Query) SafeReadFromDiskIntoBuffer() {
 	if q.FatalError != nil {
 		return
 	}
@@ -364,6 +353,17 @@ func (q *Query) ReadFromDiskIntoBuffer() {
 		return
 	}
 	q.ReadBuffer, q.FatalError = q.DB.SafeRead(q.ResourcePath)
+}
+
+func (q *Query) UnsafeReadFromDiskIntoBuffer() {
+	if q.FatalError != nil {
+		return
+	}
+	if q.ResourcePath == "" {
+		q.FatalError = errors.New("Resource path missing")
+		return
+	}
+	q.ReadBuffer, q.FatalError = ioutil.ReadFile(q.ResourcePath)
 }
 
 func (q *Query) DecodeBufferIntoResource() {
@@ -377,6 +377,28 @@ func (q *Query) DecodeBufferIntoResource() {
 	reader := bytes.NewReader(q.ReadBuffer)
 	dec := gob.NewDecoder(reader)
 	q.FatalError = dec.Decode(q.Resource)
+}
+
+func (q *Query) ReadTableFileinfo() {
+	if q.FatalError != nil {
+		return
+	}
+	if q.TablePath == "" {
+		q.FatalError = errors.New("Table path missing")
+		return
+	}
+	q.TableFileInfo, q.FatalError = ioutil.ReadDir(q.TablePath)
+}
+
+func (q *Query) PassResourceToCallback(callback func(resource interface{})) {
+	if q.FatalError != nil {
+		return
+	}
+	if q.Resource == nil {
+		q.FatalError = errors.New("Resource missing")
+		return
+	}
+	callback(q.Resource)
 }
 
 func (db DB) ThwartIOBasePathEscape(ioOperationPath string) {

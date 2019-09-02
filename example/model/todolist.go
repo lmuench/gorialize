@@ -28,12 +28,12 @@ func (self TodoList) GetUser(db *gobdb.DB) (User, error) {
 // Helpers
 
 // SELECT * FROM TODOLISTS
-// func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
-// 	todoLists := []TodoList{}
+func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
+	todoLists := []TodoList{}
 
-// 	err := db.GetAll(&TodoList{}, func(resource interface{}) {
-// 		todoList := *resource.(*TodoList)
-// 		todoLists = append(todoLists, todoList)
-// 	})
-// 	return todoLists, err
-// }
+	err := db.GetAll(&TodoList{}, func(resource interface{}) {
+		todoList := *resource.(*TodoList)
+		todoLists = append(todoLists, todoList)
+	})
+	return todoLists, err
+}

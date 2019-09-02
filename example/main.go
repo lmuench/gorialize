@@ -39,11 +39,11 @@ func main() {
 	}
 	fmt.Println(uX1)
 
-	// todoListsX1, err := model.GetAllTodoLists(db)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(todoListsX1)
+	todoListsX1, err := model.GetAllTodoLists(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(todoListsX1)
 
 	// tdlX1.Title = "A different title"
 	// err = db.Update(&tdlX1)
