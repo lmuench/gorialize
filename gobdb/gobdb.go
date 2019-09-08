@@ -566,7 +566,7 @@ func (q *Query) DecryptGobBuffer() {
 
 func HashPassphrase(passphrase []byte) []byte {
 	h := hmac.New(sha512.New512_256, []byte("key"))
-	h.Write(passphrase)
+	_, _ = h.Write(passphrase) // TODO does err have to be checked?
 	return h.Sum(nil)
 }
 
