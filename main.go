@@ -67,8 +67,8 @@ func PrintHelpText() {
   Commands:
     generate [model path] [model]                     Generate a model
     generate [model path] [model] referencing [owner] Generate a model belonging to another model
-    show [table path]                                 Show a table
-    show [table path] [resource ID]                   Show a resource
+    show [directory path]                             Show a directory's resources
+    show [directory path] [resource ID]               Show a single resource
 	`)
 	os.Exit(1)
 }

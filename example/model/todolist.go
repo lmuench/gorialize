@@ -1,8 +1,8 @@
 package model
 
-import "github.com/lmuench/gobdb/gobdb"
+import "github.com/lmuench/gorialize/gorialize"
 
-// TodoList implements gobdb.Resource interface
+// TodoList implements gorialize.Resource interface
 type TodoList struct {
 	ID     int
 	UserID int
@@ -19,19 +19,19 @@ func (self *TodoList) SetID(ID int) {
 
 // Helpers
 
-func (self TodoList) GetUser(db *gobdb.DB) (User, error) {
+func (self TodoList) GetUser(db *gorialize.Directory) (User, error) {
 	var user User
-	err := db.Get(&user, self.UserID)
+	err := db.Read(&user, self.UserID)
 	return user, err
 }
 
 // Helpers
 
 // SELECT * FROM TODOLISTS
-func GetAllTodoLists(db *gobdb.DB) ([]TodoList, error) {
+func GetAllTodoLists(db *gorialize.Directory) ([]TodoList, error) {
 	todoLists := []TodoList{}
 
-	err := db.GetAll(&TodoList{}, func(resource interface{}) {
+	err := db.ReadAll(&TodoList{}, func(resource interface{}) {
 		todoList := *resource.(*TodoList)
 		todoLists = append(todoLists, todoList)
 	})

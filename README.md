@@ -1,1 +1,1 @@
-# gobdb
+# gorialize

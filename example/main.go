@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lmuench/gobdb/example/model"
-	"github.com/lmuench/gobdb/gobdb"
+	"github.com/lmuench/gorialize/example/model"
+	"github.com/lmuench/gorialize/gorialize"
 )
 
-// Example gobdb usage
+// Example gorialize usage
 func main() {
-	db := gobdb.NewEncryptedDB(
-		"/tmp/gobdb/example_dev",
+	dir := gorialize.NewEncryptedDirectory(
+		"/tmp/gorialize/example_dev",
 		true,
 		"my secret passphrase",
 	)
@@ -20,7 +20,7 @@ func main() {
 		Name: "John Doe",
 		Age:  42,
 	}
-	err := db.Insert(&u1)
+	err := dir.Create(&u1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,48 +30,48 @@ func main() {
 		UserID: u1.GetID(),
 		Title:  "My Todo List",
 	}
-	err = db.Insert(&tdl1)
+	err = dir.Create(&tdl1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(tdl1)
 
 	var tdlX1 model.TodoList
-	_ = db.Get(&tdlX1, tdl1.GetID())
+	_ = dir.Read(&tdlX1, tdl1.GetID())
 	fmt.Println(tdlX1)
 
-	uX1, err := tdlX1.GetUser(db)
+	uX1, err := tdlX1.GetUser(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(uX1)
 
-	todoListsX1, err := model.GetAllTodoLists(db)
+	todoListsX1, err := model.GetAllTodoLists(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(todoListsX1)
 
 	tdlX1.Title = "A different title"
-	err = db.Update(&tdlX1)
+	err = dir.Replace(&tdlX1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	todoListsX2, err := model.GetAllTodoLists(db)
+	todoListsX2, err := model.GetAllTodoLists(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(todoListsX2)
 
 	// for _, tdl := range todoListsX2 {
-	// 	err := db.Delete(&tdl)
+	// 	err := dir.Delete(&tdl)
 	// 	if err != nil {
 	// 		log.Fatal(err)
 	// 	}
 	// }
 
-	// err = db.DeleteAll(&model.User{})
+	// err = dir.DeleteAll(&model.User{})
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }

@@ -72,7 +72,7 @@ func GenerateWithOwner(path string, model string, owner string) error {
 
 var modelTemplate = `package {{.Package}}
 
-import "github.com/lmuench/gobdb/gobdb"
+import "github.com/lmuench/gorialize/gorialize"
 
 type {{.Model}} struct {
 	ID int
@@ -87,20 +87,20 @@ func (self *{{.Model}}) SetID(ID int) {
 	self.ID = ID
 }
 
-func GetAll{{.Model}}s(db *gobdb.DB) ([]{{.Model}}, error) {
+func GetAll{{.Model}}s(dir *gorialize.Directory) ([]{{.Model}}, error) {
 	{{.ModelVar}}s := []{{.Model}}{}
 
-	err := db.GetAll(&{{.Model}}{}, func(resource interface{}) {
+	err := dir.GetAll(&{{.Model}}{}, func(resource interface{}) {
 		{{.ModelVar}} := *resource.(*{{.Model}})
 		{{.ModelVar}}s = append({{.ModelVar}}s, {{.ModelVar}})
 	})
 	return {{.ModelVar}}s, err
 }
 
-func GetAll{{.Model}}sMap(db *gobdb.DB) (map[int]{{.Model}}, error) {
+func GetAll{{.Model}}sMap(dir *gorialize.Directory) (map[int]{{.Model}}, error) {
 	{{.ModelVar}}s := make(map[int]{{.Model}})
 
-	err := db.GetAll(&{{.Model}}{}, func(resource interface{}) {
+	err := dir.GetAll(&{{.Model}}{}, func(resource interface{}) {
 		{{.ModelVar}} := *resource.(*{{.Model}})
 		{{.ModelVar}}s[{{.ModelVar}}.GetID()] = {{.ModelVar}}
 	})
@@ -110,7 +110,7 @@ func GetAll{{.Model}}sMap(db *gobdb.DB) (map[int]{{.Model}}, error) {
 
 var modelWithOwnerTemplate = `package {{.Package}}
 
-import "github.com/lmuench/gobdb/gobdb"
+import "github.com/lmuench/gorialize/gorialize"
 
 type {{.Model}} struct {
 	ID int
@@ -126,26 +126,26 @@ func (self *{{.Model}}) SetID(ID int) {
 	self.ID = ID
 }
 
-func (self {{.Model}}) Get{{.Owner}}(db *gobdb.DB) ({{.Owner}}, error) {
+func (self {{.Model}}) Get{{.Owner}}(dir *gorialize.Directory) ({{.Owner}}, error) {
 	var {{.OwnerVar}} {{.Owner}}
-	err := db.Get(&{{.OwnerVar}}, self.{{.Owner}}ID)
+	err := dir.Get(&{{.OwnerVar}}, self.{{.Owner}}ID)
 	return {{.OwnerVar}}, err
 }
 
-func GetAll{{.Model}}s(db *gobdb.DB) ([]{{.Model}}, error) {
+func GetAll{{.Model}}s(dir *gorialize.Directory) ([]{{.Model}}, error) {
 	{{.ModelVar}}s := []{{.Model}}{}
 
-	err := db.GetAll(&{{.Model}}{}, func(resource interface{}) {
+	err := dir.GetAll(&{{.Model}}{}, func(resource interface{}) {
 		{{.ModelVar}} := *resource.(*{{.Model}})
 		{{.ModelVar}}s = append({{.ModelVar}}s, {{.ModelVar}})
 	})
 	return {{.ModelVar}}s, err
 }
 
-func GetAll{{.Model}}sMap(db *gobdb.DB) (map[int]{{.Model}}, error) {
+func GetAll{{.Model}}sMap(dir *gorialize.Directory) (map[int]{{.Model}}, error) {
 	{{.ModelVar}}s := make(map[int]{{.Model}})
 
-	err := db.GetAll(&{{.Model}}{}, func(resource interface{}) {
+	err := dir.GetAll(&{{.Model}}{}, func(resource interface{}) {
 		{{.ModelVar}} := *resource.(*{{.Model}})
 		{{.ModelVar}}s[{{.ModelVar}}.GetID()] = {{.ModelVar}}
 	})
