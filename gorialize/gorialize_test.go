@@ -32,6 +32,10 @@ func beforeEach() {
 	_ = dir.DeleteAll(&user{})
 }
 
+func afterEach() {
+	_ = dir.DeleteAll(&user{})
+}
+
 func TestCreateAndRead(t *testing.T) {
 	beforeEach()
 
@@ -61,6 +65,8 @@ func TestCreateAndRead(t *testing.T) {
 			t.Error("Ages don't equal")
 		}
 	}
+
+	afterEach()
 }
 
 func TestReplace(t *testing.T) {
@@ -106,4 +112,45 @@ func TestReplace(t *testing.T) {
 			t.Error("Ages don't equal")
 		}
 	}
+
+	afterEach()
+}
+
+func TestDelete(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < 100; i++ {
+		newUser := &user{
+			Name: faker.Name().Name(),
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Error(err)
+		}
+
+		serializedUser := &user{}
+		err = dir.Read(serializedUser, newUser.GetID())
+		if err != nil {
+			t.Error(err)
+		}
+
+		newName := faker.Name().Name()
+		newAge := uint(faker.Number().NumberInt(2))
+
+		serializedUser.Name = newName
+		serializedUser.Age = newAge
+
+		err = dir.Delete(serializedUser)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = dir.Read(&user{}, serializedUser.GetID())
+		if err == nil {
+			t.Error("Resource should have been deleted but was not:", *serializedUser)
+		}
+	}
+
+	afterEach()
 }
