@@ -6,7 +6,7 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-const testIterationCount = 100
+const testIterationCount = 3
 
 type user struct {
 	ID   int
@@ -151,6 +151,40 @@ func TestDelete(t *testing.T) {
 		err = dir.Read(&user{}, serializedUser.GetID())
 		if err == nil {
 			t.Error("Resource should have been deleted but was not:", *serializedUser)
+		}
+	}
+
+	afterEach()
+}
+
+func TestReadAll(t *testing.T) {
+	beforeEach()
+
+	newUsers := []user{}
+
+	for i := 0; i < testIterationCount; i++ {
+		newUser := user{
+			Name: faker.Name().Name(),
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(&newUser)
+		if err != nil {
+			t.Error(err)
+		}
+		newUsers = append(newUsers, newUser)
+	}
+
+	serializedUsers := []user{}
+	err := dir.ReadAll(&user{}, func(resource interface{}) {
+		serializedUsers = append(serializedUsers, *resource.(*user))
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	for i := range newUsers {
+		if serializedUsers[i] != newUsers[i] {
+			t.Error("Users don't equal")
 		}
 	}
 
