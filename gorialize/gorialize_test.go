@@ -6,6 +6,8 @@ import (
 	"syreclabs.com/go/faker"
 )
 
+const testIterationCount = 100
+
 type user struct {
 	ID   int
 	Name string
@@ -39,7 +41,7 @@ func afterEach() {
 func TestCreateAndRead(t *testing.T) {
 	beforeEach()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < testIterationCount; i++ {
 		newUser := &user{
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),
@@ -72,7 +74,7 @@ func TestCreateAndRead(t *testing.T) {
 func TestReplace(t *testing.T) {
 	beforeEach()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < testIterationCount; i++ {
 		newUser := &user{
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),
@@ -119,7 +121,7 @@ func TestReplace(t *testing.T) {
 func TestDelete(t *testing.T) {
 	beforeEach()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < testIterationCount; i++ {
 		newUser := &user{
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),

@@ -1,4 +1,4 @@
-package main
+package gorialize
 
 import (
 	"bytes"
@@ -8,24 +8,22 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/lmuench/gorialize/gorialize"
-
 	"github.com/drosseau/degob"
 )
 
 func ShowOne(dirPath string, filename string) error {
 	passphrase := os.Getenv("GORIALIZE_PASS")
-	var dir *gorialize.Directory
+	var dir *Directory
 	if passphrase == "" {
-		dir = gorialize.NewDirectory("", false)
+		dir = NewDirectory("", false)
 	} else {
-		dir = gorialize.NewEncryptedDirectory("", false, passphrase)
+		dir = NewEncryptedDirectory("", false, passphrase)
 	}
 	id, err := strconv.Atoi(filename)
 	if err != nil {
 		return errors.New("Resource ID parameter must be a number")
 	}
-	q := dir.NewQueryWithID("show", nil, id)
+	q := dir.newQueryWithID("show", nil, id)
 	q.DirPath = dirPath
 	q.ThwartIOBasePathEscape()
 	q.ExitIfDirNotExist()
@@ -61,11 +59,11 @@ func ShowAll(dirPath string) error {
 	}
 
 	passphrase := os.Getenv("GORIALIZE_PASS")
-	var dir *gorialize.Directory
+	var dir *Directory
 	if passphrase == "" {
-		dir = gorialize.NewDirectory("", false)
+		dir = NewDirectory("", false)
 	} else {
-		dir = gorialize.NewEncryptedDirectory("", false, passphrase)
+		dir = NewEncryptedDirectory("", false, passphrase)
 	}
 
 	for _, f := range files {
@@ -77,7 +75,7 @@ func ShowAll(dirPath string) error {
 		if err != nil {
 			continue
 		}
-		q := dir.NewQueryWithID("show", nil, id)
+		q := dir.newQueryWithID("show", nil, id)
 		q.DirPath = dirPath
 		q.ThwartIOBasePathEscape()
 		q.ExitIfDirNotExist()

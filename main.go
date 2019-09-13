@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/lmuench/gorialize/gorialize"
 )
 
 func main() {
@@ -56,10 +58,10 @@ func HandleGenerateCommand(command string, path string, args []string, argCnt in
 
 func HandleShowCommand(command string, path string, args []string, argCnt int) error {
 	if argCnt < 3 {
-		return ShowAll(path)
+		return gorialize.ShowAll(path)
 	}
 	filename := args[2]
-	return ShowOne(path, filename)
+	return gorialize.ShowOne(path, filename)
 }
 
 func PrintHelpText() {

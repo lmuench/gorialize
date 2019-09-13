@@ -43,7 +43,7 @@ func NewDirectory(path string, log bool) *Directory {
 }
 
 func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory {
-	h := HashPassphrase([]byte(passphrase))
+	h := hashPassphrase([]byte(passphrase))
 	var key32B [32]byte
 	copy(key32B[:], h[:32])
 	dir := &Directory{
@@ -86,7 +86,7 @@ func (q Query) Log() {
 	}
 }
 
-func (dir Directory) NewQueryWithoutID(operation string, resource Resource) *Query {
+func (dir Directory) newQueryWithoutID(operation string, resource Resource) *Query {
 	return &Query{
 		Dir:       dir,
 		Operation: operation,
@@ -94,7 +94,7 @@ func (dir Directory) NewQueryWithoutID(operation string, resource Resource) *Que
 	}
 }
 
-func (dir Directory) NewQueryWithID(operation string, resource Resource, id int) *Query {
+func (dir Directory) newQueryWithID(operation string, resource Resource, id int) *Query {
 	return &Query{
 		Dir:       dir,
 		Operation: operation,
@@ -107,7 +107,7 @@ func (dir Directory) Create(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.NewQueryWithoutID("create", resource)
+	q := dir.newQueryWithoutID("create", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -129,7 +129,7 @@ func (dir Directory) Read(resource Resource, id int) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.NewQueryWithID("read", resource, id)
+	q := dir.newQueryWithID("read", resource, id)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -147,7 +147,7 @@ func (dir Directory) ReadAll(resource Resource, callback func(resource interface
 	defer mutex.Unlock()
 	var err error
 
-	q := dir.NewQueryWithoutID("read", resource)
+	q := dir.newQueryWithoutID("read", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -175,7 +175,7 @@ func (dir Directory) Replace(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.NewQueryWithID("replace", resource, resource.GetID())
+	q := dir.newQueryWithID("replace", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -194,7 +194,7 @@ func (dir Directory) CreateOrReplace(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.NewQueryWithID("create or replace", resource, resource.GetID())
+	q := dir.newQueryWithID("create or replace", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -211,7 +211,7 @@ func (dir Directory) Delete(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.NewQueryWithID("delete", resource, resource.GetID())
+	q := dir.newQueryWithID("delete", resource, resource.GetID())
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -228,7 +228,7 @@ func (dir Directory) DeleteAll(resource Resource) error {
 	defer mutex.Unlock()
 	var err error
 
-	q := dir.NewQueryWithoutID("delete", resource)
+	q := dir.newQueryWithoutID("delete", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -337,7 +337,7 @@ func (q *Query) ReadCounterFromDisk() {
 		q.FatalError = errors.New("Counter path missing")
 		return
 	}
-	b, err := q.Dir.ReadFromDisk(q.CounterPath)
+	b, err := q.Dir.readFromDisk(q.CounterPath)
 	if err == nil {
 		q.Counter, q.FatalError = strconv.Atoi(string(b))
 	} else {
@@ -377,7 +377,7 @@ func (q *Query) WriteGobToDisk() {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.FatalError = q.Dir.WriteToDisk(q.ResourcePath, q.GobBuffer)
+	q.FatalError = q.Dir.writeToDisk(q.ResourcePath, q.GobBuffer)
 }
 
 func (q *Query) WriteCounterToDisk() {
@@ -392,7 +392,7 @@ func (q *Query) WriteCounterToDisk() {
 		q.FatalError = errors.New("Counter path missing")
 		return
 	}
-	q.FatalError = q.Dir.WriteToDisk(q.CounterPath, []byte(strconv.Itoa(q.Counter)))
+	q.FatalError = q.Dir.writeToDisk(q.CounterPath, []byte(strconv.Itoa(q.Counter)))
 }
 
 func (q *Query) ExitIfDirNotExist() {
@@ -433,7 +433,7 @@ func (q *Query) ReadGobFromDisk() {
 		q.FatalError = errors.New("Resource path missing")
 		return
 	}
-	q.GobBuffer, q.FatalError = q.Dir.ReadFromDisk(q.ResourcePath)
+	q.GobBuffer, q.FatalError = q.Dir.readFromDisk(q.ResourcePath)
 }
 
 func (q *Query) DecodeGobToResource() {
@@ -564,18 +564,18 @@ func (q *Query) DecryptGobBuffer() {
 	)
 }
 
-func HashPassphrase(passphrase []byte) []byte {
+func hashPassphrase(passphrase []byte) []byte {
 	h := hmac.New(sha512.New512_256, []byte("key"))
 	_, _ = h.Write(passphrase) // TODO find out if returned err should be checked
 	return h.Sum(nil)
 }
 
-func (dir Directory) WriteToDisk(path string, b []byte) error {
+func (dir Directory) writeToDisk(path string, b []byte) error {
 	err := ioutil.WriteFile(path, b, 0644)
 	return err
 }
 
-func (dir Directory) ReadFromDisk(path string) ([]byte, error) {
+func (dir Directory) readFromDisk(path string) ([]byte, error) {
 	b, err := ioutil.ReadFile(path)
 	return b, err
 }
