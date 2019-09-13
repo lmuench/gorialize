@@ -22,11 +22,13 @@ import (
 
 var mutex sync.Mutex
 
+// Resource is the interface any type that should be serialized with gorialize has to implement.
 type Resource interface {
 	GetID() int
 	SetID(ID int)
 }
 
+// Directory exposes methods to read and write serialized data inside a base directory.
 type Directory struct {
 	Path      string
 	Log       bool
@@ -34,6 +36,7 @@ type Directory struct {
 	Key       *[32]byte
 }
 
+// NewDirectory returns a new unencrypted directory.
 func NewDirectory(path string, log bool) *Directory {
 	dir := &Directory{
 		Path: path,
@@ -42,6 +45,7 @@ func NewDirectory(path string, log bool) *Directory {
 	return dir
 }
 
+// NewDirectory returns a new encrypted directory.
 func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory {
 	h := hashPassphrase([]byte(passphrase))
 	var key32B [32]byte
@@ -103,6 +107,7 @@ func (dir Directory) newQueryWithID(operation string, resource Resource, id int)
 	}
 }
 
+// Create creates a new serialized resource and sets its ID.
 func (dir Directory) Create(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -125,6 +130,7 @@ func (dir Directory) Create(resource Resource) error {
 	return q.FatalError
 }
 
+// Read reads the serialized resource with the given ID.
 func (dir Directory) Read(resource Resource, id int) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -142,6 +148,7 @@ func (dir Directory) Read(resource Resource, id int) error {
 	return q.FatalError
 }
 
+// ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
 func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -171,6 +178,7 @@ func (dir Directory) ReadAll(resource Resource, callback func(resource interface
 	return q.FatalError
 }
 
+// Replace replaces a serialized resource.
 func (dir Directory) Replace(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -207,6 +215,7 @@ func (dir Directory) CreateOrReplace(resource Resource) error {
 	return q.FatalError
 }
 
+// Delete deletes a serialized resource.
 func (dir Directory) Delete(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -223,6 +232,7 @@ func (dir Directory) Delete(resource Resource) error {
 	return q.FatalError
 }
 
+// DeleteAll deletes all serialized resources of the given type.
 func (dir Directory) DeleteAll(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
