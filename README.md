@@ -6,3 +6,64 @@ type Resource interface {
 	SetID(ID int)
 }
 ```
+
+## API
+
+### Directory
+```Go
+type Directory struct {
+    Path      string
+    Log       bool
+    Encrypted bool
+    Key       *[32]byte
+}
+```
+Directory exposes methods to read and write serialized data inside a base directory.
+
+#### NewDirectory
+```Go
+func NewDirectory(path string, log bool) *Directory
+```
+NewDirectory returns a new unencrypted directory.
+
+#### NewEncryptedDirectory
+```Go
+func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory
+```
+NewDirectory returns a new encrypted directory.
+
+#### Create
+```Go
+func (dir Directory) Create(resource Resource) error
+```
+Create creates a new serialized resource and sets its ID.
+
+#### Delete
+```Go
+func (dir Directory) Delete(resource Resource) error
+```
+Delete deletes a serialized resource.
+
+#### DeleteAll
+```Go
+func (dir Directory) DeleteAll(resource Resource) error
+```
+DeleteAll deletes all serialized resources of the given type.
+
+#### Read
+```Go
+func (dir Directory) Read(resource Resource, id int) error
+```
+Read reads the serialized resource with the given ID.
+
+#### ReadAll
+```Go
+func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error
+```
+ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
+
+#### Replace
+```Go
+func (dir Directory) Replace(resource Resource) error
+```
+Replace replaces a serialized resource
