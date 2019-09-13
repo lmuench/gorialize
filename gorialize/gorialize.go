@@ -198,22 +198,22 @@ func (dir Directory) Replace(resource Resource) error {
 	return q.FatalError
 }
 
-func (dir Directory) CreateOrReplace(resource Resource) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+// func (dir Directory) CreateOrReplace(resource Resource) error {
+// 	mutex.Lock()
+// 	defer mutex.Unlock()
 
-	q := dir.newQueryWithID("create or replace", resource, resource.GetID())
-	q.ReflectModelNameFromResource()
-	q.BuildDirPath()
-	q.ThwartIOBasePathEscape()
-	q.ExitIfDirNotExist()
-	q.EncodeResourceToGob()
-	q.EncryptGobBuffer()
-	q.BuildResourcePath()
-	q.WriteGobToDisk()
-	q.Log()
-	return q.FatalError
-}
+// 	q := dir.newQueryWithID("create or replace", resource, resource.GetID())
+// 	q.ReflectModelNameFromResource()
+// 	q.BuildDirPath()
+// 	q.ThwartIOBasePathEscape()
+// 	q.ExitIfDirNotExist()
+// 	q.EncodeResourceToGob()
+// 	q.EncryptGobBuffer()
+// 	q.BuildResourcePath()
+// 	q.WriteGobToDisk()
+// 	q.Log()
+// 	return q.FatalError
+// }
 
 // Delete deletes a serialized resource.
 func (dir Directory) Delete(resource Resource) error {
