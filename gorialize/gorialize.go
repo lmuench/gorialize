@@ -1,3 +1,7 @@
+// Package gorialize is a serialization framework for Go. It aims to provide an embedded persistence layer
+// for applications that do not require all the features of a database. Gorialize lets you serialize
+// your structs and other data types to gobs while organizing the serialized data like database.
+// It provides a CRUD API that accepts any type that implements the Gorialize Resource interface
 package gorialize
 
 import (
