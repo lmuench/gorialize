@@ -152,6 +152,24 @@ func (dir Directory) Read(resource Resource, id int) error {
 	return q.FatalError
 }
 
+// readFromCustomSubdirectory reads the serialized resource with the given ID from a custom subdirectory.
+// This method is intended for testing purposes.
+func (dir Directory) readFromCustomSubdirectory(resource Resource, id int, subdir string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	q := dir.newQueryWithID("read", resource, id)
+	q.BuildCustomDirPath(subdir)
+	q.ThwartIOBasePathEscape()
+	q.ExitIfDirNotExist()
+	q.BuildResourcePath()
+	q.ReadGobFromDisk()
+	q.DecryptGobBuffer()
+	q.DecodeGobToResource()
+	q.Log()
+	return q.FatalError
+}
+
 // ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
 func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error {
 	mutex.Lock()
@@ -287,6 +305,17 @@ func (q *Query) BuildDirPath() {
 		return
 	}
 	q.DirPath = q.Dir.Path + "/" + q.Model
+}
+
+func (q *Query) BuildCustomDirPath(subdir string) {
+	if q.FatalError != nil {
+		return
+	}
+	if q.Dir.Path == "" {
+		q.FatalError = errors.New("Directory path missing")
+		return
+	}
+	q.DirPath = q.Dir.Path + "/" + subdir
 }
 
 func (q *Query) BuildMetadataPath() {

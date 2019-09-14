@@ -22,6 +22,20 @@ func (self *user) SetID(ID int) {
 	self.ID = ID
 }
 
+type userV2 struct {
+	ID        int
+	Name      string
+	Birthdate string
+}
+
+func (self *userV2) GetID() int {
+	return self.ID
+}
+
+func (self *userV2) SetID(ID int) {
+	self.ID = ID
+}
+
 var dir *Directory
 
 func beforeEach() {
@@ -185,6 +199,39 @@ func TestReadAll(t *testing.T) {
 	for i := range newUsers {
 		if serializedUsers[i] != newUsers[i] {
 			t.Error("Users don't equal")
+		}
+	}
+
+	afterEach()
+}
+
+func TestReadAfterResourceFieldsChanged(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		newUser := &user{
+			Name: faker.Name().Name(),
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Error(err)
+		}
+
+		serializedUser := &userV2{}
+		err = dir.readFromCustomSubdirectory(serializedUser, newUser.GetID(), "gorialize.user")
+		if err != nil {
+			t.Error(err)
+		}
+
+		if serializedUser.ID != newUser.ID {
+			t.Error("IDs don't equal")
+		}
+		if serializedUser.Name != newUser.Name {
+			t.Error("Names don't equal")
+		}
+		if serializedUser.Birthdate != "" {
+			t.Error("Added field birthdate should be empty")
 		}
 	}
 
