@@ -19,19 +19,19 @@ func (self *TodoList) SetID(ID int) {
 
 // Helpers
 
-func (self TodoList) GetUser(db *gorialize.Directory) (User, error) {
+func (self TodoList) GetUser(dir *gorialize.Directory) (User, error) {
 	var user User
-	err := db.Read(&user, self.UserID)
+	err := dir.Read(&user, self.UserID)
 	return user, err
 }
 
 // Helpers
 
 // SELECT * FROM TODOLISTS
-func GetAllTodoLists(db *gorialize.Directory) ([]TodoList, error) {
+func GetAllTodoLists(dir *gorialize.Directory) ([]TodoList, error) {
 	todoLists := []TodoList{}
 
-	err := db.ReadAll(&TodoList{}, func(resource interface{}) {
+	err := dir.ReadAll(&TodoList{}, func(resource interface{}) {
 		todoList := *resource.(*TodoList)
 		todoLists = append(todoLists, todoList)
 	})

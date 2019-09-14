@@ -18,10 +18,10 @@ func (self *User) SetID(ID int) {
 }
 
 // SELECT * FROM USERS
-func GetAllUsersMap(db *gorialize.Directory) (map[int]User, error) {
+func GetAllUsersMap(dir *gorialize.Directory) (map[int]User, error) {
 	users := make(map[int]User)
 
-	err := db.ReadAll(&User{}, func(resource interface{}) {
+	err := dir.ReadAll(&User{}, func(resource interface{}) {
 		user := *resource.(*User)
 		users[user.GetID()] = user
 	})
@@ -29,10 +29,10 @@ func GetAllUsersMap(db *gorialize.Directory) (map[int]User, error) {
 }
 
 // SELECT * FROM USERS
-func GetAllUsers(db *gorialize.Directory) ([]User, error) {
+func GetAllUsers(dir *gorialize.Directory) ([]User, error) {
 	users := []User{}
 
-	err := db.ReadAll(&User{}, func(resource interface{}) {
+	err := dir.ReadAll(&User{}, func(resource interface{}) {
 		user := *resource.(*User)
 		users = append(users, user)
 	})
@@ -40,10 +40,10 @@ func GetAllUsers(db *gorialize.Directory) ([]User, error) {
 }
 
 // SELECT * FROM USERS WHERE AGE > 42
-func GetAllUsersOver42(db *gorialize.Directory) ([]User, error) {
+func GetAllUsersOver42(dir *gorialize.Directory) ([]User, error) {
 	users := []User{}
 
-	err := db.ReadAll(&User{}, func(resource interface{}) {
+	err := dir.ReadAll(&User{}, func(resource interface{}) {
 		user := *resource.(*User)
 		if user.Age > 42 {
 			users = append(users, user)
