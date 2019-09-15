@@ -1,12 +1,13 @@
 package gorialize
 
 import (
+	"reflect"
 	"testing"
 
 	"syreclabs.com/go/faker"
 )
 
-const testIterationCount = 3
+const testIterationCount = 1000
 
 type user struct {
 	ID   int
@@ -41,7 +42,7 @@ var dir *Directory
 func beforeEach() {
 	dir = NewEncryptedDirectory(
 		"/tmp/gorialize/gorialize_test",
-		true,
+		false,
 		"password123",
 	)
 
@@ -62,23 +63,23 @@ func TestCreateAndRead(t *testing.T) {
 		}
 		err := dir.Create(newUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		serializedUser := &user{}
 		err = dir.Read(serializedUser, newUser.GetID())
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		if serializedUser.ID != newUser.ID {
-			t.Error("IDs don't equal")
+			t.Fatal("IDs don't equal")
 		}
 		if serializedUser.Name != newUser.Name {
-			t.Error("Names don't equal")
+			t.Fatal("Names don't equal")
 		}
 		if serializedUser.Age != newUser.Age {
-			t.Error("Ages don't equal")
+			t.Fatal("Ages don't equal")
 		}
 	}
 
@@ -95,13 +96,13 @@ func TestReplace(t *testing.T) {
 		}
 		err := dir.Create(newUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		serializedUser := &user{}
 		err = dir.Read(serializedUser, newUser.GetID())
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		newName := faker.Name().Name()
@@ -112,20 +113,20 @@ func TestReplace(t *testing.T) {
 
 		err = dir.Replace(serializedUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		updatedUser := &user{}
 		err = dir.Read(updatedUser, serializedUser.GetID())
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		if updatedUser.Name != newName {
-			t.Error("Names don't equal")
+			t.Fatal("Names don't equal")
 		}
 		if updatedUser.Age != newAge {
-			t.Error("Ages don't equal")
+			t.Fatal("Ages don't equal")
 		}
 	}
 
@@ -142,13 +143,13 @@ func TestDelete(t *testing.T) {
 		}
 		err := dir.Create(newUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		serializedUser := &user{}
 		err = dir.Read(serializedUser, newUser.GetID())
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		newName := faker.Name().Name()
@@ -159,12 +160,12 @@ func TestDelete(t *testing.T) {
 
 		err = dir.Delete(serializedUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		err = dir.Read(&user{}, serializedUser.GetID())
 		if err == nil {
-			t.Error("Resource should have been deleted but was not:", *serializedUser)
+			t.Fatal("Resource should have been deleted but was not:", *serializedUser)
 		}
 	}
 
@@ -173,6 +174,10 @@ func TestDelete(t *testing.T) {
 
 func TestReadAll(t *testing.T) {
 	beforeEach()
+	err := dir.ResetCounter(&user{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	newUsers := []user{}
 
@@ -181,25 +186,41 @@ func TestReadAll(t *testing.T) {
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),
 		}
-		err := dir.Create(&newUser)
+		err = dir.Create(&newUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		newUsers = append(newUsers, newUser)
 	}
 
+	unorderedNewUsers := make(map[int]user)
+	for _, u := range newUsers {
+		unorderedNewUsers[u.GetID()] = u
+	}
+
+	unorderedSerializedUsers := make(map[int]user)
+	err = dir.ReadAll(&user{}, func(resource interface{}) {
+		user := *resource.(*user)
+		unorderedSerializedUsers[user.GetID()] = user
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(unorderedNewUsers, unorderedSerializedUsers) {
+		t.Fatal("Users don't equal")
+	}
+
 	serializedUsers := []user{}
-	err := dir.ReadAll(&user{}, func(resource interface{}) {
+	err = dir.ReadAll(&user{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*user))
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	for i := range newUsers {
-		if serializedUsers[i] != newUsers[i] {
-			t.Error("Users don't equal")
-		}
+	if !reflect.DeepEqual(newUsers, serializedUsers) {
+		t.Fatal("Users are not in the correct order")
 	}
 
 	afterEach()
@@ -215,23 +236,23 @@ func TestReadAfterResourceFieldsChanged(t *testing.T) {
 		}
 		err := dir.Create(newUser)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		serializedUser := &userV2{}
 		err = dir.readFromCustomSubdirectory(serializedUser, newUser.GetID(), "gorialize.user")
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		if serializedUser.ID != newUser.ID {
-			t.Error("IDs don't equal")
+			t.Fatal("IDs don't equal")
 		}
 		if serializedUser.Name != newUser.Name {
-			t.Error("Names don't equal")
+			t.Fatal("Names don't equal")
 		}
 		if serializedUser.Birthdate != "" {
-			t.Error("Added field birthdate should be empty")
+			t.Fatal("Added field birthdate should be empty")
 		}
 	}
 

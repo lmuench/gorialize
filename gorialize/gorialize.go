@@ -281,6 +281,24 @@ func (dir Directory) DeleteAll(resource Resource) error {
 	return q.FatalError
 }
 
+// ResetCounter resets the resource counter to zero
+func (dir Directory) ResetCounter(resource Resource) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	q := dir.newQueryWithoutID("create", resource)
+	q.ReflectModelNameFromResource()
+	q.BuildDirPath()
+	q.ThwartIOBasePathEscape()
+	q.BuildMetadataPath()
+	q.CreateMetadataDirectoryIfNotExist()
+	q.BuildCounterPath()
+	q.SetCounterToZero()
+	q.WriteCounterToDisk()
+	q.Log()
+	return q.FatalError
+}
+
 func (q *Query) ReflectModelNameFromResource() {
 	if q.FatalError != nil {
 		return
@@ -365,7 +383,8 @@ func (q *Query) BuildResourcePath() {
 		q.FatalError = errors.New("ID smaller than 1")
 		return
 	}
-	q.ResourcePath = q.DirPath + "/" + strconv.Itoa(q.ID)
+	filename := fmt.Sprintf("%07d", q.ID)
+	q.ResourcePath = q.DirPath + "/" + filename
 }
 
 func (q *Query) ReadCounterFromDisk() {
@@ -392,9 +411,20 @@ func (q *Query) IncrementCounterAndSetID() {
 	if q.FatalError != nil {
 		return
 	}
+	if q.Resource == nil {
+		q.FatalError = errors.New("Resource missing")
+		return
+	}
 	q.Counter++
 	q.ID = q.Counter
 	q.Resource.SetID(q.ID)
+}
+
+func (q *Query) SetCounterToZero() {
+	if q.FatalError != nil {
+		return
+	}
+	q.Counter = 0
 }
 
 func (q *Query) EncodeResourceToGob() {
