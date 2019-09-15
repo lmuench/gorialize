@@ -18,7 +18,8 @@ func Generate(path string, model string) error {
 	var d modelTemplateData
 	substrings := strings.Split(path, "/")
 	d.Package = strings.ToLower(substrings[len(substrings)-1])
-	d.ModelVar = strings.ToLower(model)
+
+	d.ModelVar = camelize(model)
 	d.Model = strings.Title(d.ModelVar)
 
 	t, err := template.New("model").Parse(modelTemplate)
@@ -39,6 +40,18 @@ func Generate(path string, model string) error {
 
 	err = t.Execute(f, d)
 	return err
+}
+
+func camelize(model string) string {
+	subs := strings.Split(model, "_")
+	if len(subs) > 1 {
+		for i := 0; i < len(subs); i++ {
+			subs[i] = strings.ToLower(subs[i])
+			subs[i] = strings.Title(subs[i])
+		}
+		return strings.Join(subs, "")
+	}
+	return strings.Title(model)
 }
 
 func GenerateWithOwner(path string, model string, owner string) error {
