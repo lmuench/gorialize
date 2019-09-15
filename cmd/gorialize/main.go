@@ -39,7 +39,7 @@ func HandleGenerateCommand(command string, path string, args []string, argCnt in
 	model := args[2]
 
 	if argCnt == 3 {
-		return Generate(path, model)
+		return Generate(path, model, "")
 	}
 
 	if argCnt == 4 {
@@ -49,7 +49,7 @@ func HandleGenerateCommand(command string, path string, args []string, argCnt in
 	switch args[3] {
 	case "referencing", "references", "ref", "belongs_to":
 		owner := args[4]
-		return GenerateWithOwner(path, model, owner)
+		return Generate(path, model, owner)
 	default:
 		PrintHelpText()
 	}

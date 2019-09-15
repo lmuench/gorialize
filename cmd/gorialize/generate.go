@@ -15,14 +15,24 @@ type modelTemplateData struct {
 	OwnerVar string
 }
 
-func Generate(path string, model string) error {
+func Generate(path string, model string, owner string) error {
 	var d modelTemplateData
 	substrings := strings.Split(path, "/")
 	d.Package = strings.ToLower(substrings[len(substrings)-1])
 	d.ModelVar = unsnake(model)
 	d.Model = camelize(model)
+	if owner != "" {
+		d.OwnerVar = unsnake(owner)
+		d.Owner = camelize(owner)
+	}
 
-	t, err := template.New("model").Parse(modelTemplate)
+	var t *template.Template
+	var err error
+	if owner != "" {
+		t, err = template.New("model with owner").Parse(modelWithOwnerTemplate)
+	} else {
+		t, err = template.New("model").Parse(modelTemplate)
+	}
 	if err != nil {
 		return err
 	}
@@ -52,51 +62,11 @@ func Generate(path string, model string) error {
 
 	err = t.Execute(f, d)
 	if err == nil {
-		fmt.Printf("Generated %s in %s\n", d.Model, filepath)
-	}
-	return err
-}
-
-func GenerateWithOwner(path string, model string, owner string) error {
-	var d modelTemplateData
-	substrings := strings.Split(path, "/")
-	d.Package = strings.ToLower(substrings[len(substrings)-1])
-	d.ModelVar = unsnake(model)
-	d.Model = camelize(model)
-	d.OwnerVar = unsnake(owner)
-	d.Owner = camelize(owner)
-
-	t, err := template.New("model with owner").Parse(modelWithOwnerTemplate)
-	if err != nil {
-		return err
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return err
+		if owner != "" {
+			fmt.Printf("Generated %s in %s\n--------- %s belongs to %s\n", d.Model, filepath, d.Model, d.Owner)
+		} else {
+			fmt.Printf("Generated %s in %s\n", d.Model, filepath)
 		}
-	}
-
-	filepath := path + "/" + d.ModelVar + ".go"
-	if _, err := os.Stat(filepath); err == nil {
-		fmt.Printf("%s already exists. Do you want to overwrite it? (y/N) ", filepath)
-		var answer string
-		fmt.Scanln(&answer)
-		if answer != "y" && answer != "Y" {
-			fmt.Println("Aborted.")
-			return nil
-		}
-	}
-
-	f, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-
-	err = t.Execute(f, d)
-	if err == nil {
-		fmt.Printf("Generated %s in %s\n--------- %s belongs to %s\n", d.Model, filepath, d.Model, d.Owner)
 	}
 	return err
 }
