@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -18,9 +19,8 @@ func Generate(path string, model string) error {
 	var d modelTemplateData
 	substrings := strings.Split(path, "/")
 	d.Package = strings.ToLower(substrings[len(substrings)-1])
-
-	d.ModelVar = camelize(model)
-	d.Model = strings.Title(d.ModelVar)
+	d.ModelVar = unsnake(model)
+	d.Model = camelize(model)
 
 	t, err := template.New("model").Parse(modelTemplate)
 	if err != nil {
@@ -33,12 +33,51 @@ func Generate(path string, model string) error {
 			return err
 		}
 	}
-	f, err := os.Create(path + "/" + d.ModelVar + ".go")
+
+	filepath := path + "/" + d.ModelVar + ".go"
+	f, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 
 	err = t.Execute(f, d)
+	if err == nil {
+		fmt.Printf("Generated %s in %s\n", d.Model, filepath)
+	}
+	return err
+}
+
+func GenerateWithOwner(path string, model string, owner string) error {
+	var d modelTemplateData
+	substrings := strings.Split(path, "/")
+	d.Package = strings.ToLower(substrings[len(substrings)-1])
+	d.ModelVar = unsnake(model)
+	d.Model = camelize(model)
+	d.OwnerVar = unsnake(owner)
+	d.Owner = camelize(owner)
+
+	t, err := template.New("model with owner").Parse(modelWithOwnerTemplate)
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err = os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	filepath := path + "/" + d.ModelVar + ".go"
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+
+	err = t.Execute(f, d)
+	if err == nil {
+		fmt.Printf("Generated %s in %s\n--------- %s belongs to %s\n", d.Model, filepath, d.Model, d.Owner)
+	}
 	return err
 }
 
@@ -54,33 +93,10 @@ func camelize(model string) string {
 	return strings.Title(model)
 }
 
-func GenerateWithOwner(path string, model string, owner string) error {
-	var d modelTemplateData
-	substrings := strings.Split(path, "/")
-	d.Package = strings.ToLower(substrings[len(substrings)-1])
-	d.ModelVar = strings.ToLower(model)
-	d.Model = strings.Title(d.ModelVar)
-	d.OwnerVar = strings.ToLower(owner)
-	d.Owner = strings.Title(d.OwnerVar)
-
-	t, err := template.New("model with owner").Parse(modelWithOwnerTemplate)
-	if err != nil {
-		return err
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-	f, err := os.Create(path + "/" + d.ModelVar + ".go")
-	if err != nil {
-		return err
-	}
-
-	err = t.Execute(f, d)
-	return err
+func unsnake(model string) string {
+	subs := strings.Split(model, "_")
+	joined := strings.Join(subs, "")
+	return strings.ToLower(joined)
 }
 
 var modelTemplate = `package {{.Package}}
