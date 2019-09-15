@@ -286,7 +286,7 @@ func (dir Directory) ResetCounter(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.newQueryWithoutID("create", resource)
+	q := dir.newQueryWithoutID("reset counter", resource)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
