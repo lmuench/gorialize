@@ -35,6 +35,16 @@ func Generate(path string, model string) error {
 	}
 
 	filepath := path + "/" + d.ModelVar + ".go"
+	if _, err := os.Stat(filepath); err == nil {
+		fmt.Printf("%s already exists. Do you want to overwrite it? (y/N) ", filepath)
+		var answer string
+		fmt.Scanln(&answer)
+		if answer != "y" && answer != "Y" {
+			fmt.Println("Aborted.")
+			return nil
+		}
+	}
+
 	f, err := os.Create(filepath)
 	if err != nil {
 		return err
@@ -69,6 +79,16 @@ func GenerateWithOwner(path string, model string, owner string) error {
 	}
 
 	filepath := path + "/" + d.ModelVar + ".go"
+	if _, err := os.Stat(filepath); err == nil {
+		fmt.Printf("%s already exists. Do you want to overwrite it? (y/N) ", filepath)
+		var answer string
+		fmt.Scanln(&answer)
+		if answer != "y" && answer != "Y" {
+			fmt.Println("Aborted.")
+			return nil
+		}
+	}
+
 	f, err := os.Create(filepath)
 	if err != nil {
 		return err
