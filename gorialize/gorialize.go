@@ -170,6 +170,23 @@ func (dir Directory) readFromCustomSubdirectory(resource Resource, id int, subdi
 	return q.FatalError
 }
 
+// ReadAllIntoSlice reads all serialized resource of the given type and writes them into the provided slice
+func (dir Directory) ReadAllIntoSlice(model Resource, slice interface{}) error {
+	// mutex.Lock()
+	// defer mutex.Unlock()
+
+	slicePtr := reflect.ValueOf(slice)
+	sliceVal := reflect.Indirect(slicePtr)
+
+	err := dir.ReadAll(model, func(resource interface{}) {
+		resourcePtr := reflect.ValueOf(resource)
+		resourceVal := reflect.Indirect(resourcePtr)
+		sliceVal.Set(reflect.Append(sliceVal, resourceVal))
+	})
+
+	return err
+}
+
 // ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
 func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error {
 	mutex.Lock()

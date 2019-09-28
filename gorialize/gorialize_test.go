@@ -7,7 +7,7 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-const testIterationCount = 1000
+const testIterationCount = 10
 
 type user struct {
 	ID   int
@@ -215,6 +215,40 @@ func TestReadAll(t *testing.T) {
 	err = dir.ReadAll(&user{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*user))
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(newUsers, serializedUsers) {
+		t.Fatal("Users are not in the correct order")
+	}
+
+	afterEach()
+}
+
+func TestReadAllIntoSlice(t *testing.T) {
+	beforeEach()
+	err := dir.ResetCounter(&user{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newUsers := []user{}
+
+	for i := 0; i < testIterationCount; i++ {
+		newUser := user{
+			Name: faker.Name().Name(),
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err = dir.Create(&newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+		newUsers = append(newUsers, newUser)
+	}
+
+	serializedUsers := []user{}
+	err = dir.ReadAllIntoSlice(&user{}, &serializedUsers)
 	if err != nil {
 		t.Fatal(err)
 	}
