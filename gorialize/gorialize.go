@@ -170,7 +170,7 @@ func (dir Directory) readFromCustomSubdirectory(resource Resource, id int, subdi
 	return q.FatalError
 }
 
-// ReadAllIntoSlice reads all serialized resource of the given type and writes them into the provided slice
+// ReadAllIntoSlice reads all serialized resources of the given slice's elements's type and writes them into the slice.
 func (dir Directory) ReadAllIntoSlice(slice interface{}) error {
 	slicePtr := reflect.ValueOf(slice)
 	sliceVal := reflect.Indirect(slicePtr)
