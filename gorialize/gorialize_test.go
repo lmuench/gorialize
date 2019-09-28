@@ -248,7 +248,7 @@ func TestReadAllIntoSlice(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAllIntoSlice(&user{}, &serializedUsers)
+	err = dir.ReadAllIntoSlice(&serializedUsers)
 	if err != nil {
 		t.Fatal(err)
 	}

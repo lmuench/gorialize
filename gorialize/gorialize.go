@@ -70,7 +70,7 @@ type Query struct {
 	Writer       bytes.Buffer
 	GobBuffer    []byte
 	Model        string
-	Resource     Resource
+	Resource     interface{}
 	ID           int
 	Counter      int
 	CounterPath  string
@@ -94,7 +94,7 @@ func (q Query) Log() {
 	}
 }
 
-func (dir Directory) newQueryWithoutID(operation string, resource Resource) *Query {
+func (dir Directory) newQueryWithoutID(operation string, resource interface{}) *Query {
 	return &Query{
 		Dir:       dir,
 		Operation: operation,
@@ -102,7 +102,7 @@ func (dir Directory) newQueryWithoutID(operation string, resource Resource) *Que
 	}
 }
 
-func (dir Directory) newQueryWithID(operation string, resource Resource, id int) *Query {
+func (dir Directory) newQueryWithID(operation string, resource interface{}, id int) *Query {
 	return &Query{
 		Dir:       dir,
 		Operation: operation,
@@ -171,24 +171,23 @@ func (dir Directory) readFromCustomSubdirectory(resource Resource, id int, subdi
 }
 
 // ReadAllIntoSlice reads all serialized resource of the given type and writes them into the provided slice
-func (dir Directory) ReadAllIntoSlice(model Resource, slice interface{}) error {
-	// mutex.Lock()
-	// defer mutex.Unlock()
-
+func (dir Directory) ReadAllIntoSlice(slice interface{}) error {
 	slicePtr := reflect.ValueOf(slice)
 	sliceVal := reflect.Indirect(slicePtr)
+	resourceTyp := reflect.TypeOf(slice).Elem().Elem()
+	resourceVal := reflect.New(resourceTyp)
+	resource := resourceVal.Interface()
 
-	err := dir.ReadAll(model, func(resource interface{}) {
+	err := dir.ReadAll(resource, func(resource interface{}) {
 		resourcePtr := reflect.ValueOf(resource)
 		resourceVal := reflect.Indirect(resourcePtr)
 		sliceVal.Set(reflect.Append(sliceVal, resourceVal))
 	})
-
 	return err
 }
 
 // ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
-func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error {
+func (dir Directory) ReadAll(resource interface{}, callback func(resource interface{})) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var err error
@@ -434,7 +433,7 @@ func (q *Query) IncrementCounterAndSetID() {
 	}
 	q.Counter++
 	q.ID = q.Counter
-	q.Resource.SetID(q.ID)
+	q.Resource.(Resource).SetID(q.ID)
 }
 
 func (q *Query) SetCounterToZero() {
@@ -494,6 +493,7 @@ func (q *Query) ExitIfDirNotExist() {
 		return
 	}
 	if _, err := os.Stat(q.DirPath); os.IsNotExist(err) {
+		fmt.Println(q.DirPath)
 		q.FatalError = errors.New("Directory does not exist")
 	}
 }
