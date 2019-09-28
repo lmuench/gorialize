@@ -25,26 +25,19 @@ Directory exposes methods to read and write serialized data inside a base direct
 func NewDirectory(path string, log bool) *Directory
 ```
 NewDirectory returns a new unencrypted directory.
+
 #### NewEncryptedDirectory
 ```Go
 func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory
 ```
 NewDirectory returns a new encrypted directory.
+
 #### Create
 ```Go
 func (dir Directory) Create(resource Resource) error
 ```
 Create creates a new serialized resource and sets its ID.
-#### Delete
-```Go
-func (dir Directory) Delete(resource Resource) error
-```
-Delete deletes a serialized resource.
-#### DeleteAll
-```Go
-func (dir Directory) DeleteAll(resource Resource) error
-```
-DeleteAll deletes all serialized resources of the given type.
+
 #### Read
 ```Go
 func (dir Directory) Read(resource Resource, id int) error
@@ -68,3 +61,15 @@ ReadAll reads all serialized resource of the given type and calls the provided c
 func (dir Directory) Replace(resource Resource) error
 ```
 Replace replaces a serialized resource
+
+#### Delete
+```Go
+func (dir Directory) Delete(resource Resource) error
+```
+Delete deletes a serialized resource.
+
+#### DeleteAll
+```Go
+func (dir Directory) DeleteAll(resource Resource) error
+```
+DeleteAll deletes all serialized resources of the given type.
