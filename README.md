@@ -52,7 +52,7 @@ ReadAllIntoSlice reads all serialized resources of the given slice's elements's 
 
 #### ReadAll
 ```Go
-func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error
+func (dir Directory) ReadAll(resource interface{}, callback func(resource interface{})) error
 ```
 ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
 
