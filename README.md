@@ -50,6 +50,13 @@ DeleteAll deletes all serialized resources of the given type.
 func (dir Directory) Read(resource Resource, id int) error
 ```
 Read reads the serialized resource with the given ID.
+
+#### ReadAllIntoSlice
+```Go
+func (dir Directory) ReadAllIntoSlice(slice interface{}) error {
+```
+ReadAllIntoSlice reads all serialized resources of the given slice's elements's type and writes them into the slice.
+
 #### ReadAll
 ```Go
 func (dir Directory) ReadAll(resource Resource, callback func(resource interface{})) error
