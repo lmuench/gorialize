@@ -62,6 +62,12 @@ func (dir Directory) Replace(resource Resource) error
 ```
 Replace replaces a serialized resource
 
+#### Update
+```Go
+func (dir Directory) Update(resource Resource, id int) error
+```
+Update partially updates a serialized resource with all non-zero values of the given resource.
+
 #### Delete
 ```Go
 func (dir Directory) Delete(resource Resource) error

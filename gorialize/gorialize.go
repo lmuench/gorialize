@@ -236,7 +236,7 @@ func (dir Directory) Replace(resource Resource) error {
 	return q.FatalError
 }
 
-// Replace updates a serialized resource with non-zero values of the given resource.
+// Update partially updates a serialized resource with all non-zero values of the given resource.
 func (dir Directory) Update(resource Resource, id int) error {
 	err := dir.Create(resource)
 	if err != nil {
