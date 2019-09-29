@@ -7,7 +7,7 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-const testIterationCount = 10
+const testIterationCount = 3
 
 type user struct {
 	ID   int
@@ -127,6 +127,110 @@ func TestReplace(t *testing.T) {
 		}
 		if updatedUser.Age != newAge {
 			t.Fatal("Ages don't equal")
+		}
+	}
+
+	afterEach()
+}
+
+func TestUpdate(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		userAgeOnly := &user{
+			Age: uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(userAgeOnly)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		userNameOnly := &user{
+			Name: faker.Name().Name(),
+		}
+
+		err = dir.Update(userNameOnly, userAgeOnly.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		updatedUser := &user{}
+		err = dir.Read(updatedUser, userAgeOnly.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if updatedUser.Age != userAgeOnly.Age {
+			t.Fatal("Ages don't equal")
+		}
+		if updatedUser.Name != userNameOnly.Name {
+			t.Fatal("Names don't equal")
+		}
+	}
+
+	for i := 0; i < testIterationCount; i++ {
+		userAgeAndName := &user{
+			Age:  uint(faker.Number().NumberInt(2)),
+			Name: faker.Name().Name(),
+		}
+		err := dir.Create(userAgeAndName)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		userNameOnly := &user{
+			Name: faker.Name().Name(),
+		}
+
+		err = dir.Update(userNameOnly, userAgeAndName.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		updatedUser := &user{}
+		err = dir.Read(updatedUser, userAgeAndName.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if updatedUser.Age != userAgeAndName.Age {
+			t.Fatal("Ages don't equal")
+		}
+		if updatedUser.Name != userNameOnly.Name {
+			t.Fatal("Names don't equal")
+		}
+	}
+
+	for i := 0; i < testIterationCount; i++ {
+		userAgeAndName := &user{
+			Age:  uint(faker.Number().NumberInt(2)),
+			Name: faker.Name().Name(),
+		}
+		err := dir.Create(userAgeAndName)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		userAgeOnly := &user{
+			Age: uint(faker.Number().NumberInt(2)),
+		}
+
+		err = dir.Update(userAgeOnly, userAgeAndName.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		updatedUser := &user{}
+		err = dir.Read(updatedUser, userAgeAndName.GetID())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if updatedUser.Age != userAgeOnly.Age {
+			t.Fatal("Ages don't equal")
+		}
+		if updatedUser.Name != userAgeAndName.Name {
+			t.Fatal("Names don't equal")
 		}
 	}
 

@@ -236,6 +236,35 @@ func (dir Directory) Replace(resource Resource) error {
 	return q.FatalError
 }
 
+// Replace updates a serialized resource with non-zero values of the given resource.
+func (dir Directory) Update(resource Resource, id int) error {
+	err := dir.Create(resource)
+	if err != nil {
+		return err
+	}
+	tmpID := resource.GetID()
+
+	err = dir.Read(resource, id)
+	if err != nil {
+		return err
+	}
+
+	err = dir.Read(resource, tmpID)
+	if err != nil {
+		return err
+	}
+
+	resource.SetID(id)
+	err = dir.Replace(resource)
+	if err != nil {
+		return err
+	}
+
+	resource.SetID(tmpID)
+	err = dir.Delete(resource)
+	return err
+}
+
 // func (dir Directory) CreateOrReplace(resource Resource) error {
 // 	mutex.Lock()
 // 	defer mutex.Unlock()
