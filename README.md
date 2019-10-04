@@ -23,10 +23,10 @@ Directory exposes methods to read and write serialized data inside a base direct
 #### DirectoryConfig
 ```Go
 type DirectoryConfig struct {
-	Path       string
-	Encrypted  bool
-	Passphrase string
-	Log        bool
+    Path       string
+    Encrypted  bool
+    Passphrase string
+    Log        bool
 }
 ```
 DirectoryConfig holds parameters to be passed to NewDirectory().
