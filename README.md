@@ -1,13 +1,13 @@
 # Gorialize
-Gorialize is a serialization framework for Go. It aims to provide an embedded persistence layer for applications that do not require all the features of a database. Gorialize lets you serialize your structs and other data types to [gobs](https://golang.org/pkg/encoding/gob/) while organizing the serialized data like a database. It provides a CRUD API that accepts any type that implements the Gorialize `Resource` interface:
+Gorialize is a serialization framework for Go. It aims to provide an embedded persistence layer for applications that do not require all the features of a database. Gorialize lets you serialize your structs and other data types to [gobs](https://golang.org/pkg/encoding/gob/) while organizing the serialized data like a database. It provides a CRUD API that accepts any struct with an addressable `ID` field of type `int`. Those types of structs have to be passed to Gorialize's methods by reference and are named `resource` in the method header.
+
+#### Example Resource Type
 ```Go
-type Resource interface {
-    GetID() int
-    SetID(ID int)
+type User struct {
+	ID   int     // <-- required field
+	Name string
 }
 ```
-
-## API
 
 #### Directory
 ```Go
@@ -39,13 +39,13 @@ NewDirectory returns a new Directory struct for the given configuration.
 
 #### Create
 ```Go
-func (dir Directory) Create(resource Resource) error
+func (dir Directory) Create(resource interface{}) error
 ```
 Create creates a new serialized resource and sets its ID.
 
 #### Read
 ```Go
-func (dir Directory) Read(resource Resource, id int) error
+func (dir Directory) Read(resource interface{}, id int) error
 ```
 Read reads the serialized resource with the given ID.
 
@@ -63,24 +63,24 @@ ReadAll reads all serialized resource of the given type and calls the provided c
 
 #### Replace
 ```Go
-func (dir Directory) Replace(resource Resource) error
+func (dir Directory) Replace(resource interface{}) error
 ```
 Replace replaces a serialized resource
 
 #### Update
 ```Go
-func (dir Directory) Update(resource Resource, id int) error
+func (dir Directory) Update(resource interface{}, id int) error
 ```
 Update partially updates a serialized resource with all non-zero values of the given resource.
 
 #### Delete
 ```Go
-func (dir Directory) Delete(resource Resource) error
+func (dir Directory) Delete(resource interface{}) error
 ```
 Delete deletes a serialized resource.
 
 #### DeleteAll
 ```Go
-func (dir Directory) DeleteAll(resource Resource) error
+func (dir Directory) DeleteAll(resource interface{}) error
 ```
 DeleteAll deletes all serialized resources of the given type.
