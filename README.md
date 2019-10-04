@@ -9,7 +9,7 @@ type Resource interface {
 
 ## API
 
-### Directory
+#### Directory
 ```Go
 type Directory struct {
     Path      string
@@ -20,17 +20,22 @@ type Directory struct {
 ```
 Directory exposes methods to read and write serialized data inside a base directory.
 
+#### DirectoryConfig
+```Go
+type DirectoryConfig struct {
+	Path       string
+	Encrypted  bool
+	Passphrase string
+	Log        bool
+}
+```
+DirectoryConfig holds parameters to be passed to NewDirectory().
+
 #### NewDirectory
 ```Go
-func NewDirectory(path string, log bool) *Directory
+func NewDirectory(config DirectoryConfig) *Directory
 ```
-NewDirectory returns a new unencrypted directory.
-
-#### NewEncryptedDirectory
-```Go
-func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory
-```
-NewDirectory returns a new encrypted directory.
+NewDirectory returns a new Directory struct for the given configuration.
 
 #### Create
 ```Go

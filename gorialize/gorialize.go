@@ -35,12 +35,20 @@ type Resource interface {
 // Directory exposes methods to read and write serialized data inside a base directory.
 type Directory struct {
 	Path      string
-	Log       bool
 	Encrypted bool
 	Key       *[32]byte
+	Log       bool
 }
 
-// NewDirectory returns a new directory.
+// DirectoryConfig holds parameters to be passed to NewDirectory().
+type DirectoryConfig struct {
+	Path       string
+	Encrypted  bool
+	Passphrase string
+	Log        bool
+}
+
+// NewDirectory returns a new Directory struct for the given configuration.
 func NewDirectory(config DirectoryConfig) *Directory {
 	dir := &Directory{
 		Path: config.Path,
@@ -55,13 +63,6 @@ func NewDirectory(config DirectoryConfig) *Directory {
 		dir.Encrypted = true
 	}
 	return dir
-}
-
-type DirectoryConfig struct {
-	Path       string
-	Encrypted  bool
-	Passphrase string
-	Log        bool
 }
 
 type Query struct {
