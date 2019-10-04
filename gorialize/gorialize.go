@@ -223,7 +223,11 @@ func (dir Directory) Replace(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.newQueryWithID("replace", resource, resource.GetID())
+	id, err := getID(resource)
+	if err != nil {
+		return err
+	}
+	q := dir.newQueryWithID("replace", resource, id)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -244,7 +248,11 @@ func (dir Directory) Update(resource Resource, id int) error {
 	if err != nil {
 		return err
 	}
-	tmpID := resource.GetID()
+
+	tmpID, err := getID(resource)
+	if err != nil {
+		return err
+	}
 
 	err = dir.Read(resource, id)
 	if err != nil {
@@ -256,13 +264,19 @@ func (dir Directory) Update(resource Resource, id int) error {
 		return err
 	}
 
-	resource.SetID(id)
+	err = setID(resource, id)
+	if err != nil {
+		return err
+	}
 	err = dir.Replace(resource)
 	if err != nil {
 		return err
 	}
 
-	resource.SetID(tmpID)
+	err = setID(resource, tmpID)
+	if err != nil {
+		return err
+	}
 	err = dir.Delete(resource)
 	return err
 }
@@ -289,7 +303,11 @@ func (dir Directory) Delete(resource Resource) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	q := dir.newQueryWithID("delete", resource, resource.GetID())
+	id, err := getID(resource)
+	if err != nil {
+		return err
+	}
+	q := dir.newQueryWithID("delete", resource, id)
 	q.ReflectModelNameFromResource()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
@@ -464,7 +482,7 @@ func (q *Query) IncrementCounterAndSetID() {
 	}
 	q.Counter++
 	q.ID = q.Counter
-	q.Resource.(Resource).SetID(q.ID)
+	q.FatalError = setID(q.Resource, q.ID)
 }
 
 func (q *Query) SetCounterToZero() {
@@ -699,4 +717,31 @@ func (dir Directory) writeToDisk(path string, b []byte) error {
 func (dir Directory) readFromDisk(path string) ([]byte, error) {
 	b, err := ioutil.ReadFile(path)
 	return b, err
+}
+
+func getID(resource interface{}) (int, error) {
+	val := reflect.ValueOf(resource).Elem()
+	if val.Kind() != reflect.Struct {
+		return 0, errors.New("resource is not a struct pointer")
+	}
+
+	idField := val.FieldByName("ID")
+	if !idField.IsValid() || !idField.CanSet() || idField.Kind() != reflect.Int {
+		return 0, errors.New("resource does not have an addressable ID int field")
+	}
+	return int(idField.Int()), nil
+}
+
+func setID(resource interface{}, id int) error {
+	val := reflect.ValueOf(resource).Elem()
+	if val.Kind() != reflect.Struct {
+		return errors.New("resource is not a struct pointer")
+	}
+
+	idField := val.FieldByName("ID")
+	if !idField.IsValid() || !idField.CanSet() || idField.Kind() != reflect.Int {
+		return errors.New("resource does not have an addressable ID int field")
+	}
+	idField.SetInt(int64(id))
+	return nil
 }

@@ -54,6 +54,36 @@ func afterEach() {
 	_ = dir.DeleteAll(&user{})
 }
 
+func TestGetID(t *testing.T) {
+	beforeEach()
+
+	u := &user{}
+	id, err := getID(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id != u.ID {
+		t.Fatal("getID does not return correct ID")
+	}
+
+	afterEach()
+}
+
+func TestSetID(t *testing.T) {
+	beforeEach()
+
+	u := &user{}
+	err := setID(u, 42)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.ID != 42 {
+		t.Fatal("setID does not set ID correctly")
+	}
+
+	afterEach()
+}
+
 func TestCreateAndRead(t *testing.T) {
 	beforeEach()
 
@@ -68,7 +98,7 @@ func TestCreateAndRead(t *testing.T) {
 		}
 
 		serializedUser := &user{}
-		err = dir.Read(serializedUser, newUser.GetID())
+		err = dir.Read(serializedUser, newUser.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -101,7 +131,7 @@ func TestReplace(t *testing.T) {
 		}
 
 		serializedUser := &user{}
-		err = dir.Read(serializedUser, newUser.GetID())
+		err = dir.Read(serializedUser, newUser.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,7 +148,7 @@ func TestReplace(t *testing.T) {
 		}
 
 		updatedUser := &user{}
-		err = dir.Read(updatedUser, serializedUser.GetID())
+		err = dir.Read(updatedUser, serializedUser.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -150,13 +180,13 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeOnly.GetID())
+		err = dir.Update(userNameOnly, userAgeOnly.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		updatedUser := &user{}
-		err = dir.Read(updatedUser, userAgeOnly.GetID())
+		err = dir.Read(updatedUser, userAgeOnly.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,13 +213,13 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeAndName.GetID())
+		err = dir.Update(userNameOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		updatedUser := &user{}
-		err = dir.Read(updatedUser, userAgeAndName.GetID())
+		err = dir.Read(updatedUser, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,13 +246,13 @@ func TestUpdate(t *testing.T) {
 			Age: uint(faker.Number().NumberInt(2)),
 		}
 
-		err = dir.Update(userAgeOnly, userAgeAndName.GetID())
+		err = dir.Update(userAgeOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		updatedUser := &user{}
-		err = dir.Read(updatedUser, userAgeAndName.GetID())
+		err = dir.Read(updatedUser, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -252,7 +282,7 @@ func TestDelete(t *testing.T) {
 		}
 
 		serializedUser := &user{}
-		err = dir.Read(serializedUser, newUser.GetID())
+		err = dir.Read(serializedUser, newUser.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -268,7 +298,7 @@ func TestDelete(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = dir.Read(&user{}, serializedUser.GetID())
+		err = dir.Read(&user{}, serializedUser.ID)
 		if err == nil {
 			t.Fatal("Resource should have been deleted but was not:", *serializedUser)
 		}
@@ -300,13 +330,13 @@ func TestReadAll(t *testing.T) {
 
 	unorderedNewUsers := make(map[int]user)
 	for _, u := range newUsers {
-		unorderedNewUsers[u.GetID()] = u
+		unorderedNewUsers[u.ID] = u
 	}
 
 	unorderedSerializedUsers := make(map[int]user)
 	err = dir.ReadAll(&user{}, func(resource interface{}) {
 		user := *resource.(*user)
-		unorderedSerializedUsers[user.GetID()] = user
+		unorderedSerializedUsers[user.ID] = user
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -379,7 +409,7 @@ func TestReadAfterResourceFieldsChanged(t *testing.T) {
 		}
 
 		serializedUser := &userV2{}
-		err = dir.readFromCustomSubdirectory(serializedUser, newUser.GetID(), "gorialize.user")
+		err = dir.readFromCustomSubdirectory(serializedUser, newUser.ID, "gorialize.user")
 		if err != nil {
 			t.Fatal(err)
 		}
