@@ -40,11 +40,12 @@ func (self *userV2) SetID(ID int) {
 var dir *Directory
 
 func beforeEach() {
-	dir = NewEncryptedDirectory(
-		"/tmp/gorialize/gorialize_test",
-		false,
-		"password123",
-	)
+	dir = NewDirectory(DirectoryConfig{
+		Path:       "/tmp/gorialize/gorialize_test",
+		Encrypted:  true,
+		Passphrase: "password123",
+		Log:        false,
+	})
 
 	_ = dir.DeleteAll(&user{})
 }

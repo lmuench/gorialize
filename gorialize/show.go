@@ -13,12 +13,12 @@ import (
 
 func ShowOne(dirPath string, filename string) error {
 	passphrase := os.Getenv("GORIALIZE_PASS")
-	var dir *Directory
-	if passphrase == "" {
-		dir = NewDirectory("", false)
-	} else {
-		dir = NewEncryptedDirectory("", false, passphrase)
-	}
+	dir := NewDirectory(DirectoryConfig{
+		Encrypted:  passphrase != "",
+		Passphrase: passphrase,
+		Log:        false,
+	})
+
 	id, err := strconv.Atoi(filename)
 	if err != nil {
 		return errors.New("Resource ID parameter must be a number")
@@ -59,12 +59,11 @@ func ShowAll(dirPath string) error {
 	}
 
 	passphrase := os.Getenv("GORIALIZE_PASS")
-	var dir *Directory
-	if passphrase == "" {
-		dir = NewDirectory("", false)
-	} else {
-		dir = NewEncryptedDirectory("", false, passphrase)
-	}
+	dir := NewDirectory(DirectoryConfig{
+		Encrypted:  passphrase != "",
+		Passphrase: passphrase,
+		Log:        false,
+	})
 
 	for _, f := range files {
 		if f.IsDir() {

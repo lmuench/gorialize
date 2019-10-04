@@ -40,27 +40,28 @@ type Directory struct {
 	Key       *[32]byte
 }
 
-// NewDirectory returns a new unencrypted directory.
-func NewDirectory(path string, log bool) *Directory {
+// NewDirectory returns a new directory.
+func NewDirectory(config DirectoryConfig) *Directory {
 	dir := &Directory{
-		Path: path,
-		Log:  log,
+		Path: config.Path,
+		Log:  config.Log,
+	}
+
+	if config.Encrypted {
+		var key [32]byte
+		h := hashPassphrase([]byte(config.Passphrase))
+		copy(key[:], h[:32])
+		dir.Key = &key
+		dir.Encrypted = true
 	}
 	return dir
 }
 
-// NewDirectory returns a new encrypted directory.
-func NewEncryptedDirectory(path string, log bool, passphrase string) *Directory {
-	h := hashPassphrase([]byte(passphrase))
-	var key32B [32]byte
-	copy(key32B[:], h[:32])
-	dir := &Directory{
-		Path:      path,
-		Log:       log,
-		Encrypted: true,
-		Key:       &key32B,
-	}
-	return dir
+type DirectoryConfig struct {
+	Path       string
+	Encrypted  bool
+	Passphrase string
+	Log        bool
 }
 
 type Query struct {

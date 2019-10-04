@@ -10,11 +10,12 @@ import (
 
 // Example gorialize usage
 func main() {
-	dir := gorialize.NewEncryptedDirectory(
-		"/tmp/gorialize/example_dev",
-		true,
-		"my secret passphrase",
-	)
+	dir := gorialize.NewDirectory(gorialize.DirectoryConfig{
+		Path:       "/tmp/gorialize/example_dev",
+		Encrypted:  true,
+		Passphrase: "my secret passphrase",
+		Log:        true,
+	})
 
 	u1 := model.User{
 		Name: "John Doe",
