@@ -13,9 +13,9 @@ type User struct {
 ```Go
 type Directory struct {
     Path      string
-    Log       bool
     Encrypted bool
     Key       *[32]byte
+    Log       bool
 }
 ```
 Directory exposes methods to read and write serialized data inside a base directory.
