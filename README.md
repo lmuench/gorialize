@@ -4,8 +4,8 @@ Gorialize is a serialization framework for Go. It aims to provide an embedded pe
 #### Example Resource Type
 ```Go
 type User struct {
-	ID   int  // <-- required field
-	Name string
+    ID   int  // <-- required field
+    Name string
 }
 ```
 
