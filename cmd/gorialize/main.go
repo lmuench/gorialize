@@ -20,8 +20,6 @@ func main() {
 	path := args[1]
 
 	switch command {
-	case "generate", "g":
-		err = HandleGenerateCommand(command, path, args, argCnt)
 	case "show", "s":
 		err = HandleShowCommand(command, path, args, argCnt)
 	default:
@@ -30,30 +28,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func HandleGenerateCommand(command string, path string, args []string, argCnt int) error {
-	if argCnt < 3 {
-		PrintHelpText()
-	}
-	model := args[2]
-
-	if argCnt == 3 {
-		return Generate(path, model, "")
-	}
-
-	if argCnt == 4 {
-		PrintHelpText()
-	}
-
-	switch args[3] {
-	case "referencing", "references", "ref", "belongs_to":
-		owner := args[4]
-		return Generate(path, model, owner)
-	default:
-		PrintHelpText()
-	}
-	return nil
 }
 
 func HandleShowCommand(command string, path string, args []string, argCnt int) error {
@@ -67,8 +41,6 @@ func HandleShowCommand(command string, path string, args []string, argCnt int) e
 func PrintHelpText() {
 	fmt.Println(`
   Commands:
-    generate [model path] [model]                     Generate a model
-    generate [model path] [model] referencing [owner] Generate a model belonging to another model
     show [directory path]                             Show a directory's resources
     show [directory path] [resource ID]               Show a single resource
 	`)
