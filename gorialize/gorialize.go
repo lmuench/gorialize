@@ -148,6 +148,19 @@ func (dir Directory) Read(resource interface{}, id int) error {
 	return q.FatalError
 }
 
+// GetOwner reads the serialized resource which owns the given resource.
+// The resource needs to have an addressable owner ID int field which
+// follows a 'FooID' naming convention where 'Foo' is the owner type.
+func (dir Directory) GetOwner(resource interface{}, owner interface{}) error {
+	ownerID, err := getOwnerID(resource, owner)
+	if err != nil {
+		return err
+	}
+
+	err = dir.Read(owner, ownerID)
+	return err
+}
+
 // readFromCustomSubdirectory reads the serialized resource with the given ID from a custom subdirectory.
 // This method is intended for testing purposes.
 func (dir Directory) readFromCustomSubdirectory(resource interface{}, id int, subdir string) error {
@@ -738,4 +751,24 @@ func setID(resource interface{}, id int) error {
 	}
 	idField.SetInt(int64(id))
 	return nil
+}
+
+func getOwnerID(resource interface{}, owner interface{}) (int, error) {
+	if reflect.ValueOf(owner).Elem().Kind() != reflect.Struct {
+		return 0, errors.New("owner is not a struct pointer")
+	}
+	subs := strings.Split(reflect.TypeOf(owner).String()[1:], ".")
+	ownerModel := subs[len(subs)-1]
+
+	val := reflect.ValueOf(resource).Elem()
+	if val.Kind() != reflect.Struct {
+		return 0, errors.New("resource is not a struct pointer")
+	}
+
+	idField := val.FieldByName(strings.Title(ownerModel) + "ID")
+	if !idField.IsValid() || !idField.CanSet() || idField.Kind() != reflect.Int {
+		return 0, errors.New(`resource does not have an addressable owner ID int field or the
+ field doesn't follow the required 'FooID' naming convention where 'Foo' is the owner type`)
+	}
+	return int(idField.Int()), nil
 }

@@ -29,6 +29,17 @@ type userV2 struct {
 	Birthdate string
 }
 
+type todoList struct {
+	ID    int
+	Title string
+}
+
+type todoItem struct {
+	ID         int
+	TodoListID int
+	Text       string
+}
+
 func (self *userV2) GetID() int {
 	return self.ID
 }
@@ -422,6 +433,48 @@ func TestReadAfterResourceFieldsChanged(t *testing.T) {
 		}
 		if serializedUser.Birthdate != "" {
 			t.Fatal("Added field birthdate should be empty")
+		}
+	}
+
+	afterEach()
+}
+
+func TestGetOwner(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		newTodoList := &todoList{
+			Title: faker.Lorem().Sentence(3),
+		}
+		err := dir.Create(newTodoList)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if newTodoList.ID == 0 {
+			t.Fatal("ID still has zero-value after dir.Create()")
+		}
+
+		newTodoItem := &todoItem{
+			TodoListID: newTodoList.ID,
+			Text:       faker.Lorem().Sentence(7),
+		}
+		err = dir.Create(newTodoItem)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		serializedTodoList := &todoList{}
+		err = dir.GetOwner(newTodoItem, serializedTodoList)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if serializedTodoList.ID != newTodoList.ID {
+			t.Fatal("IDs don't equal")
+		}
+		if serializedTodoList.Title != newTodoList.Title {
+			t.Fatal("Titles don't equal")
 		}
 	}
 
