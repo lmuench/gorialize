@@ -84,3 +84,11 @@ Delete deletes a serialized resource.
 func (dir Directory) DeleteAll(resource interface{}) error
 ```
 DeleteAll deletes all serialized resources of the given type.
+
+#### GetOwner
+```Go
+func (dir Directory) GetOwner(resource interface{}, owner interface{}) error
+```
+GetOwner reads the serialized resource which owns the given resource.
+The resource needs to have an addressable owner ID int field which
+follows a 'FooID' naming convention where 'Foo' is the owner type.
