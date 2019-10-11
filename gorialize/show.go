@@ -11,6 +11,8 @@ import (
 	"github.com/drosseau/degob"
 )
 
+// ShowOne prints a gob file's contents to the console.
+// It does not need the corresponding struct to decode the gob file.
 func ShowOne(dirPath string, filename string) error {
 	passphrase := os.Getenv("GORIALIZE_PASS")
 	dir := NewDirectory(DirectoryConfig{
@@ -52,6 +54,8 @@ func ShowOne(dirPath string, filename string) error {
 	return nil
 }
 
+// ShowAll prints the content of all gob files in a directory to the console.
+// It does not need the corresponding struct to decode the gob files.
 func ShowAll(dirPath string) error {
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
