@@ -1,5 +1,5 @@
 # Gorialize
-Gorialize is a serialization framework for Go. It aims to provide an embedded persistence layer for applications that do not require all the features of a database. Gorialize lets you serialize your structs and other data types to [gobs](https://golang.org/pkg/encoding/gob/) while organizing the serialized data like a database. It provides a CRUD API that accepts any struct with an addressable `ID` field of type `int`. Those types of structs have to be passed to Gorialize's methods by reference and are named `resource` in the method header.
+Gorialize is an embedded database that stores Go structs serialized to [gobs](https://golang.org/pkg/encoding/gob/).
 
 #### Example Resource Type
 ```Go
