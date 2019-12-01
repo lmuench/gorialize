@@ -338,23 +338,6 @@ func (dir Directory) Update(resource interface{}, id int) error {
 	return err
 }
 
-// func (dir Directory) CreateOrReplace(resource interface{}) error {
-// 	mutex.Lock()
-// 	defer mutex.Unlock()
-
-// 	q := dir.newQueryWithID("create or replace", resource, resource.GetID())
-// 	q.ReflectModelNameFromType()
-// 	q.BuildDirPath()
-// 	q.ThwartIOBasePathEscape()
-// 	q.ExitIfDirNotExist()
-// 	q.EncodeResourceToGob()
-// 	q.EncryptGobBuffer()
-// 	q.BuildResourcePath()
-// 	q.WriteGobToDisk()
-// 	q.Log()
-// 	return q.FatalError
-// }
-
 // Delete deletes a serialized resource.
 func (dir Directory) Delete(resource interface{}) error {
 	mutex.Lock()
@@ -459,25 +442,25 @@ func (q *Query) UpdateIndices() {
 		tag := field.Tag.Get("gorialize")
 			if tag == "indexed" {
 			value := reflect.Indirect(
-					reflect.ValueOf(q.Resource),
-				).FieldByName(field.Name).Interface()
-				if _, ok := q.Dir.Indices[Model(q.Model)]; !ok {
-					q.Dir.Indices[Model(q.Model)] = Index{}
-				}
-				if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)]; !ok {
-					q.Dir.Indices[Model(q.Model)][Field(field.Name)] = map[Value][]ID{}
-				}
-				if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] ; !ok {
-					q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = []ID{}
-				}
-				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = append(
-					q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)], ID(q.ID),
-				)
-				q.IndexUpdateLog = append(
-					q.IndexUpdateLog,
-					fmt.Sprintf("%s %d: %s = %v", q.Model, q.ID, field.Name, value),
-				)
+				reflect.ValueOf(q.Resource),
+			).FieldByName(field.Name).Interface()
+			if _, ok := q.Dir.Indices[Model(q.Model)]; !ok {
+				q.Dir.Indices[Model(q.Model)] = Index{}
 			}
+			if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)]; !ok {
+				q.Dir.Indices[Model(q.Model)][Field(field.Name)] = map[Value][]ID{}
+			}
+			if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] ; !ok {
+				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = []ID{}
+			}
+			q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = append(
+				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)], ID(q.ID),
+			)
+			q.IndexUpdateLog = append(
+				q.IndexUpdateLog,
+				fmt.Sprintf("%s %d: %s = %v", q.Model, q.ID, field.Name, value),
+			)
+		}
 	}
 }
 
