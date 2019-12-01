@@ -2,6 +2,7 @@ package gorialize
 
 import (
 	"reflect"
+	"fmt"
 	"testing"
 
 	"syreclabs.com/go/faker"
@@ -13,14 +14,6 @@ type user struct {
 	ID   int
 	Name string
 	Age  uint
-}
-
-func (self *user) GetID() int {
-	return self.ID
-}
-
-func (self *user) SetID(ID int) {
-	self.ID = ID
 }
 
 type userV2 struct {
@@ -40,14 +33,6 @@ type todoItem struct {
 	Text       string
 }
 
-func (self *userV2) GetID() int {
-	return self.ID
-}
-
-func (self *userV2) SetID(ID int) {
-	self.ID = ID
-}
-
 var dir *Directory
 
 func beforeEach() {
@@ -55,7 +40,7 @@ func beforeEach() {
 		Path:       "/tmp/gorialize/gorialize_test",
 		Encrypted:  true,
 		Passphrase: "password123",
-		Log:        false,
+		Log:        true,
 	})
 
 	_ = dir.DeleteAll(&user{})
@@ -475,6 +460,79 @@ func TestGetOwner(t *testing.T) {
 		}
 		if serializedTodoList.Title != newTodoList.Title {
 			t.Fatal("Titles don't equal")
+		}
+	}
+
+	afterEach()
+}
+
+type userV3 struct {
+	ID   int
+	Name string `gorialize:"indexed"`
+	Age  uint
+}
+
+func TestIndexAfterCreate(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		name := faker.Name().Name()
+		newUser := &userV3{
+			Name: name,
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modelIndices, ok := dir.Indices[Model("gorialize.userV3")]
+		fmt.Println(dir.Indices)
+		if !ok {
+			t.Fatal("gorialize.userV3 indices don't exist")
+		}
+		idx, ok := modelIndices[Field("Name")]
+		if !ok {
+			t.Fatal("Name index doesn't exist")
+		}
+		ids, ok := idx[Value(name)]
+		if !ok {
+			t.Fatal("Name index doesn't contain name")
+		}
+		if len(ids) < 1 {
+			t.Fatal("Name index points to empty ID slice")
+		}
+		// TODO: Test duplicate names.
+		// Below would fail if faker would randomly create the same name twice.
+		if ids[0] != ID(newUser.ID) {
+			t.Fatal("Indexed name doesn't point to correct ID")
+		}
+	}
+
+	afterEach()
+}
+
+func TestFind(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		name := faker.Name().Name()
+		newUser := &userV3{
+			Name: name,
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		foundUser := &userV3{}
+		err = dir.Find(foundUser, Where{Field: "Name", Value: name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(foundUser, newUser) {
+			t.Fatal("Users don't equal")
 		}
 	}
 
