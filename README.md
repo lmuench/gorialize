@@ -34,8 +34,8 @@ DirectoryConfig holds parameters to be passed to NewDirectory().
 #### Where
 ```Go
 type Where struct {
-	Field Field
-	Value Value
+    Field Field
+    Value Value
 }
 ```
 Where clauses can be passed to Find()
@@ -71,7 +71,7 @@ func (dir Directory) ReadAll(resource interface{}, callback func(resource interf
 ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
 
 #### Find
-// Find reads the first serialized resources matching the given WHERE clauses
+Find reads the first serialized resources matching the given WHERE clauses
 ```Go
 func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
 ```
