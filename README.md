@@ -5,7 +5,7 @@ Gorialize is an embedded database that stores Go structs serialized to [gobs](ht
 ```Go
 type User struct {
     ID   int  // <-- required field
-    Name string
+    Name string `gorialize:"indexed"`
 }
 ```
 
@@ -30,6 +30,15 @@ type DirectoryConfig struct {
 }
 ```
 DirectoryConfig holds parameters to be passed to NewDirectory().
+
+#### Where
+```Go
+type Where struct {
+	Field Field
+	Value Value
+}
+```
+Where clauses can be passed to Find()
 
 #### NewDirectory
 ```Go
@@ -60,6 +69,12 @@ ReadAllIntoSlice reads all serialized resources of the given slice's elements's 
 func (dir Directory) ReadAll(resource interface{}, callback func(resource interface{})) error
 ```
 ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
+
+#### Find
+// Find reads the first serialized resources matching the given WHERE clauses
+```Go
+func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
+```
 
 #### Replace
 ```Go
