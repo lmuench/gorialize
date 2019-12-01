@@ -73,7 +73,7 @@ ReadAll reads all serialized resource of the given type and calls the provided c
 #### Find
 Find reads the first serialized resources matching the given WHERE clauses
 ```Go
-func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
+func (dir Directory) Find(resource interface{}, whereClauses ...Where) error
 ```
 
 #### Replace
