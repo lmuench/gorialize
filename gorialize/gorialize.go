@@ -341,6 +341,7 @@ func (dir Directory) Update(resource interface{}, id int) error {
 }
 
 // Delete deletes a serialized resource.
+// TODO: update indices and append to index change log
 func (dir Directory) Delete(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -363,6 +364,7 @@ func (dir Directory) Delete(resource interface{}) error {
 }
 
 // DeleteAll deletes all serialized resources of the given type.
+// TODO: update indices and append to index change log
 func (dir Directory) DeleteAll(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -464,6 +466,7 @@ func (q *Query) UpdateIndices() {
 			q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = append(
 				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)], ID(q.ID),
 			)
+			// TODO handle values containing colons
 			logEntry := fmt.Sprintf("%s:%d:%s:%v", q.Model, q.ID, field.Name, value)
 			_, err = f.WriteString(logEntry + "\n")
 			if err != nil {
