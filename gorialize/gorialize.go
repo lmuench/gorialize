@@ -34,11 +34,12 @@ type ID int
 
 // Directory exposes methods to read and write serialized data inside a base directory.
 type Directory struct {
-	Path      string
-	Encrypted bool
-	Key       *[32]byte
-	Log       bool
-	Indices   map[Model]Index
+	Path         string
+	Encrypted    bool
+	Key          *[32]byte
+	Log          bool
+	Indices      map[Model]Index
+	IndexLogPath string
 }
 
 // DirectoryConfig holds parameters to be passed to NewDirectory().
@@ -52,9 +53,10 @@ type DirectoryConfig struct {
 // NewDirectory returns a new Directory struct for the given configuration.
 func NewDirectory(config DirectoryConfig) *Directory {
 	dir := &Directory{
-		Path: config.Path,
-		Log:  config.Log,
-		Indices: map[Model]Index{},
+		Path:     config.Path,
+		Log:      config.Log,
+		Indices:  map[Model]Index{},
+		IndexLogPath: config.Path + "/.idxlog",
 	}
 
 	if config.Encrypted {
@@ -86,7 +88,7 @@ type Query struct {
 	DirFileInfo  []os.FileInfo
 	WhereClauses []Where
 	Matches      []ID
-	IndexUpdateLog []string
+	IndexUpdates []string
 }
 
 type Where struct {
@@ -97,14 +99,14 @@ type Where struct {
 func (q Query) Log() {
 	if q.Dir.Log {
 		fmt.Println()
-		fmt.Println("Operation       :", q.Operation)
-		fmt.Println("Model           :", q.Model)
-		fmt.Println("ID              :", q.ID)
-		fmt.Println("Resource        :", q.Resource)
-		fmt.Println("Directory       :", q.DirPath)
-		fmt.Println("Fatal Error     :", q.FatalError)
-		if len(q.IndexUpdateLog) > 0 {
-			fmt.Println("Updated Indices :", q.IndexUpdateLog)
+		fmt.Println("Operation     :", q.Operation)
+		fmt.Println("Model         :", q.Model)
+		fmt.Println("ID            :", q.ID)
+		fmt.Println("Resource      :", q.Resource)
+		fmt.Println("Directory     :", q.DirPath)
+		fmt.Println("Fatal Error   :", q.FatalError)
+		if len(q.IndexUpdates) > 0 {
+			fmt.Println("Index Updates :", q.IndexUpdates)
 		}
 		fmt.Println()
 	}
@@ -128,7 +130,7 @@ func (dir Directory) newQueryWithID(operation string, resource interface{}, id i
 }
 
 // Create creates a new serialized resource and sets its ID.
-// TODO: update and Dir.Upsert indices
+// TODO: update indices and append to index change log
 func (dir Directory) Create(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -273,7 +275,7 @@ func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
 }
 
 // Replace replaces a serialized resource.
-// TODO: update and Dir.Upsert indices
+// TODO: update indices and append to index change log
 func (dir Directory) Replace(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -299,7 +301,7 @@ func (dir Directory) Replace(resource interface{}) error {
 }
 
 // Update partially updates a serialized resource with all non-zero values of the given resource.
-// TODO: update and Dir.Upsert indices
+// TODO: update indices and append to index change log
 func (dir Directory) Update(resource interface{}, id int) error {
 	err := dir.Create(resource)
 	if err != nil {
@@ -437,6 +439,12 @@ func (q *Query) UpdateIndices() {
 		q.FatalError = errors.New("Resource type missing")
 		return
 	}
+	f, err := os.OpenFile(q.Dir.IndexLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		q.FatalError = err
+		return
+	}
+	defer f.Close()
 	for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
 		field := q.ResourceType.Elem().Field(i)
 		tag := field.Tag.Get("gorialize")
@@ -456,10 +464,12 @@ func (q *Query) UpdateIndices() {
 			q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = append(
 				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)], ID(q.ID),
 			)
-			q.IndexUpdateLog = append(
-				q.IndexUpdateLog,
-				fmt.Sprintf("%s %d: %s = %v", q.Model, q.ID, field.Name, value),
-			)
+			logEntry := fmt.Sprintf("%s:%d:%s:%v", q.Model, q.ID, field.Name, value)
+			_, err = f.WriteString(logEntry + "\n")
+			if err != nil {
+				q.FatalError = err
+			}
+			q.IndexUpdates = append(q.IndexUpdates,logEntry)
 		}
 	}
 }
@@ -808,12 +818,14 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 	modelIndices, ok := q.Dir.Indices[Model(q.Model)]
 	if !ok {
 		q.FatalError = errors.New("Model indices missing")
+		return
 	}
 	idMap := make(map[ID]int, 1)
 	for _, clause := range q.WhereClauses {
 		idx, ok := modelIndices[clause.Field]
 		if !ok {
 			q.FatalError = errors.New("Index missing")
+			return
 		}
 		ids, ok := idx[clause.Value]
 		if ok {
