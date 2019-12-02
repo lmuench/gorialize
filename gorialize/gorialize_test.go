@@ -2,7 +2,6 @@ package gorialize
 
 import (
 	"reflect"
-	"fmt"
 	"testing"
 
 	"syreclabs.com/go/faker"
@@ -486,25 +485,16 @@ func TestIndexAfterCreate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		modelIndices, ok := dir.Indices[Model("gorialize.userV3")]
-		fmt.Println(dir.Indices)
+		ids, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
 		if !ok {
-			t.Fatal("gorialize.userV3 indices don't exist")
-		}
-		idx, ok := modelIndices[Field("Name")]
-		if !ok {
-			t.Fatal("Name index doesn't exist")
-		}
-		ids, ok := idx[Value(name)]
-		if !ok {
-			t.Fatal("Name index doesn't contain name")
+			t.Fatal("Index doesn't contain entry")
 		}
 		if len(ids) < 1 {
-			t.Fatal("Name index points to empty ID slice")
+			t.Fatal("Index points to empty ID slice")
 		}
 		// TODO: Test duplicate names.
 		// Below would fail if faker would randomly create the same name twice.
-		if ids[0] != ID(newUser.ID) {
+		if ids[0] != newUser.ID {
 			t.Fatal("Indexed name doesn't point to correct ID")
 		}
 	}

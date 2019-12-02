@@ -26,11 +26,18 @@ import (
 
 var mutex sync.Mutex
 
-type Index map[Field]map[Value][]ID
-type Model string
-type Field string
-type Value interface{}
-type ID int
+type Index map[string][]int
+
+func (idx Index) getIDs(model string, field string, value interface{}) (ids []int, ok bool) {
+	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	ids, ok = idx[key]
+	return
+}
+
+func (idx Index) appendID(model string, field string, value interface{}, id int) {
+	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	idx[key] = append(idx[key], id)
+}
 
 // Directory exposes methods to read and write serialized data inside a base directory.
 type Directory struct {
@@ -38,7 +45,7 @@ type Directory struct {
 	Encrypted    bool
 	Key          *[32]byte
 	Log          bool
-	Indices      map[Model]Index
+	Index        Index
 	IndexLogPath string
 }
 
@@ -53,9 +60,9 @@ type DirectoryConfig struct {
 // NewDirectory returns a new Directory struct for the given configuration.
 func NewDirectory(config DirectoryConfig) *Directory {
 	dir := &Directory{
-		Path:     config.Path,
-		Log:      config.Log,
-		Indices:  map[Model]Index{},
+		Path:         config.Path,
+		Log:          config.Log,
+		Index:        Index{},
 		IndexLogPath: config.Path + "/.idxlog",
 	}
 
@@ -87,13 +94,13 @@ type Query struct {
 	SafeIOPath   bool
 	DirFileInfo  []os.FileInfo
 	WhereClauses []Where
-	Matches      []ID
+	MatchedIDs   []int
 	IndexUpdates []string
 }
 
 type Where struct {
-	Field Field
-	Value Value
+	Field string
+	Value interface{}
 }
 
 func (q Query) Log() {
@@ -454,20 +461,8 @@ func (q *Query) UpdateIndices() {
 			value := reflect.Indirect(
 				reflect.ValueOf(q.Resource),
 			).FieldByName(field.Name).Interface()
-			if _, ok := q.Dir.Indices[Model(q.Model)]; !ok {
-				q.Dir.Indices[Model(q.Model)] = Index{}
-			}
-			if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)]; !ok {
-				q.Dir.Indices[Model(q.Model)][Field(field.Name)] = map[Value][]ID{}
-			}
-			if _, ok := q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] ; !ok {
-				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = []ID{}
-			}
-			q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)] = append(
-				q.Dir.Indices[Model(q.Model)][Field(field.Name)][Value(value)], ID(q.ID),
-			)
-			// TODO handle values containing colons
-			logEntry := fmt.Sprintf("%s:%d:%s:%v", q.Model, q.ID, field.Name, value)
+			q.Dir.Index.appendID(q.Model, field.Name, value, q.ID)
+			logEntry := fmt.Sprintf("%s:%s:%v=%d", q.Model, field.Name, value, q.ID)
 			_, err = f.WriteString(logEntry + "\n")
 			if err != nil {
 				q.FatalError = err
@@ -813,30 +808,20 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 		q.FatalError = errors.New("Model name missing")
 		return
 	}
-	cnt := len(q.WhereClauses)
-	if cnt == 0 {
+	whereClauseCount := len(q.WhereClauses)
+	if whereClauseCount == 0 {
 		q.FatalError = errors.New("Where clauses missing")
 		return
 	}
-	modelIndices, ok := q.Dir.Indices[Model(q.Model)]
-	if !ok {
-		q.FatalError = errors.New("Model indices missing")
-		return
-	}
-	idMap := make(map[ID]int, 1)
+	idCountMap := make(map[int]int, 1)
 	for _, clause := range q.WhereClauses {
-		idx, ok := modelIndices[clause.Field]
-		if !ok {
-			q.FatalError = errors.New("Index missing")
-			return
-		}
-		ids, ok := idx[clause.Value]
+		ids, ok := q.Dir.Index.getIDs(q.Model, clause.Field, clause.Value)
 		if ok {
 			for _, id := range ids {
-				idMap[id] += 1
+				idCountMap[id] += 1
 				if pickFirst {
-					if idMap[id] == cnt {
-						q.Matches = append(q.Matches, id)
+					if idCountMap[id] == whereClauseCount {
+						q.MatchedIDs = append(q.MatchedIDs, id)
 						q.ID = int(id)
 						return
 					}
@@ -844,12 +829,12 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 			}
 		}
 	}
-	for id, v := range idMap {
-		if v == cnt {
-			q.Matches = append(q.Matches, id)
+	for id, v := range idCountMap {
+		if v == whereClauseCount {
+			q.MatchedIDs = append(q.MatchedIDs, id)
 		}
 	}
-	if len(q.Matches) == 0 {
+	if len(q.MatchedIDs) == 0 {
 		q.FatalError = errors.New("No matching where clauses")
 	}
 }
