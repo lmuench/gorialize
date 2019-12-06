@@ -40,6 +40,31 @@ func (idx Index) appendID(model string, field string, value interface{}, id int)
 	idx[key] = append(idx[key], id)
 }
 
+func (idx Index) appendIDbyKey(key string, id int) {
+	idx[key] = append(idx[key], id)
+}
+
+func (idx Index) removeID(model string, field string, value interface{}, id int) {
+	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	for i := range idx[key] {
+		if idx[key][i] == id {
+			idx[key][i] = idx[key][len(idx[key])-1]
+			idx[key] = idx[key][:len(idx[key])-1]
+			break
+		}
+	}
+}
+
+func (idx Index) removeIDbyKey(key string, id int) {
+	for i := range idx[key] {
+		if idx[key][i] == id {
+			idx[key][i] = idx[key][len(idx[key])-1]
+			idx[key] = idx[key][:len(idx[key])-1]
+			break
+		}
+	}
+}
+
 // Directory exposes methods to read and write serialized data inside a base directory.
 type Directory struct {
 	Path         string
@@ -140,6 +165,9 @@ func (dir Directory) newQueryWithID(operation string, resource interface{}, id i
 func (dir Directory) ReplayIndexLog() {
 	f, err := os.Open(dir.IndexLogPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
 		log.Fatal(err)
 	}
 	defer f.Close()
@@ -147,13 +175,16 @@ func (dir Directory) ReplayIndexLog() {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if (len(line) < 7) {
+			log.Fatalf("IndexLog contains unprocessable line: %s", line)
+		}
 		var id []byte
 		var key string
 		for i := len(line)-1; i >= 0 ; i-- {
 			if line[i] != '=' {
 				id = append(id, line[i])
 			} else {
-				key = line[:i]
+				key = line[1:i]
 				break
 			}
 		}
@@ -161,7 +192,15 @@ func (dir Directory) ReplayIndexLog() {
 		if err != nil {
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
-		dir.Index[key] = append(dir.Index[key], ID)
+		op := line[0]
+		switch op {
+		case '+':
+			dir.Index.appendIDbyKey(key, ID)
+		case '-':
+			dir.Index.removeIDbyKey(key, ID)
+		default:
+			log.Fatalf("IndexLog contains unprocessable line: %s", line)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -189,7 +228,7 @@ func (dir Directory) Create(resource interface{}) error {
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
 	q.WriteCounterToDisk()
-	q.UpdateIndex()
+	q.UpdateIndex('+')
 	q.Log()
 	return q.FatalError
 }
@@ -397,7 +436,8 @@ func (dir Directory) Delete(resource interface{}) error {
 	q.ExitIfDirNotExist()
 	q.BuildResourcePath()
 	q.ThwartIOBasePathEscape()
-	q.FatalError = os.Remove(q.ResourcePath) // TODO make this a Directory method
+	q.DeleteFromDisk()
+	q.UpdateIndex('-')
 	q.Log()
 	return q.FatalError
 }
@@ -426,6 +466,7 @@ func (dir Directory) DeleteAll(resource interface{}) error {
 		}
 		q.BuildResourcePath()
 		q.DeleteFromDisk()
+		q.UpdateIndex('-')
 		q.Log()
 	}
 	return q.FatalError
@@ -472,9 +513,12 @@ func (q *Query) ReflectModelNameFromType() {
 	q.Model = q.ResourceType.String()[1:]
 }
 
-func (q *Query) UpdateIndex() {
+func (q *Query) UpdateIndex(operator rune) {
 	if q.FatalError != nil {
 		return
+	}
+	if operator != '+' && operator != '-' {
+		q.FatalError = errors.New("Unknown index operator")
 	}
 	if q.ResourceType == nil {
 		q.FatalError = errors.New("Resource type missing")
@@ -493,8 +537,12 @@ func (q *Query) UpdateIndex() {
 			value := reflect.Indirect(
 				reflect.ValueOf(q.Resource),
 			).FieldByName(field.Name).Interface()
-			q.Dir.Index.appendID(q.Model, field.Name, value, q.ID)
-			logEntry := fmt.Sprintf("%s:%s:%v=%d", q.Model, field.Name, value, q.ID)
+			if operator == '+' {
+				q.Dir.Index.appendID(q.Model, field.Name, value, q.ID)
+			} else {
+				q.Dir.Index.removeID(q.Model, field.Name, value, q.ID)
+			}
+			logEntry := fmt.Sprintf("%c%s:%s:%v=%d", operator, q.Model, field.Name, value, q.ID)
 			_, err = f.WriteString(logEntry + "\n")
 			if err != nil {
 				q.FatalError = err
