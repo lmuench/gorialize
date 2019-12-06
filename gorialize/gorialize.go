@@ -5,6 +5,7 @@
 package gorialize
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
@@ -73,6 +74,8 @@ func NewDirectory(config DirectoryConfig) *Directory {
 		dir.Key = &key
 		dir.Encrypted = true
 	}
+
+	dir.ReplayIndexLog()
 	return dir
 }
 
@@ -112,9 +115,7 @@ func (q Query) Log() {
 		fmt.Println("Resource      :", q.Resource)
 		fmt.Println("Directory     :", q.DirPath)
 		fmt.Println("Fatal Error   :", q.FatalError)
-		if len(q.IndexUpdates) > 0 {
-			fmt.Println("Index Updates :", q.IndexUpdates)
-		}
+		fmt.Println("Index Updates :", q.IndexUpdates)
 		fmt.Println()
 	}
 }
@@ -136,8 +137,39 @@ func (dir Directory) newQueryWithID(operation string, resource interface{}, id i
 	}
 }
 
+func (dir Directory) ReplayIndexLog() {
+	f, err := os.Open(dir.IndexLogPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var id []byte
+		var key string
+		for i := len(line)-1; i >= 0 ; i-- {
+			if line[i] != '=' {
+				id = append(id, line[i])
+			} else {
+				key = line[:i]
+				break
+			}
+		}
+		ID, err := strconv.Atoi(string(id))
+		if err != nil {
+			log.Fatalf("IndexLog contains unprocessable line: %s", line)
+		}
+		dir.Index[key] = append(dir.Index[key], ID)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 // Create creates a new serialized resource and sets its ID.
-// TODO: update indices and append to index change log
 func (dir Directory) Create(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -157,7 +189,7 @@ func (dir Directory) Create(resource interface{}) error {
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
 	q.WriteCounterToDisk()
-	q.UpdateIndices()
+	q.UpdateIndex()
 	q.Log()
 	return q.FatalError
 }
@@ -266,7 +298,7 @@ func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
 	defer mutex.Unlock()
 
 	q := dir.newQueryWithoutID("find", resource)
-  q.WhereClauses = whereClauses
+	q.WhereClauses = whereClauses
 	q.ReflectTypeOfResource()
 	q.ReflectModelNameFromType()
 	q.ApplyWhereClauses(true)
@@ -282,7 +314,7 @@ func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
 }
 
 // Replace replaces a serialized resource.
-// TODO: update indices and append to index change log
+// TODO: update index and append to index change log
 func (dir Directory) Replace(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -308,7 +340,7 @@ func (dir Directory) Replace(resource interface{}) error {
 }
 
 // Update partially updates a serialized resource with all non-zero values of the given resource.
-// TODO: update indices and append to index change log
+// TODO: update index and append to index change log
 func (dir Directory) Update(resource interface{}, id int) error {
 	err := dir.Create(resource)
 	if err != nil {
@@ -348,7 +380,7 @@ func (dir Directory) Update(resource interface{}, id int) error {
 }
 
 // Delete deletes a serialized resource.
-// TODO: update indices and append to index change log
+// TODO: update index and append to index change log
 func (dir Directory) Delete(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -371,7 +403,7 @@ func (dir Directory) Delete(resource interface{}) error {
 }
 
 // DeleteAll deletes all serialized resources of the given type.
-// TODO: update indices and append to index change log
+// TODO: update index and append to index change log
 func (dir Directory) DeleteAll(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -440,7 +472,7 @@ func (q *Query) ReflectModelNameFromType() {
 	q.Model = q.ResourceType.String()[1:]
 }
 
-func (q *Query) UpdateIndices() {
+func (q *Query) UpdateIndex() {
 	if q.FatalError != nil {
 		return
 	}
@@ -457,7 +489,7 @@ func (q *Query) UpdateIndices() {
 	for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
 		field := q.ResourceType.Elem().Field(i)
 		tag := field.Tag.Get("gorialize")
-			if tag == "indexed" {
+		if tag == "indexed" {
 			value := reflect.Indirect(
 				reflect.ValueOf(q.Resource),
 			).FieldByName(field.Name).Interface()
@@ -467,7 +499,7 @@ func (q *Query) UpdateIndices() {
 			if err != nil {
 				q.FatalError = err
 			}
-			q.IndexUpdates = append(q.IndexUpdates,logEntry)
+			q.IndexUpdates = append(q.IndexUpdates, logEntry)
 		}
 	}
 }
