@@ -530,6 +530,7 @@ func (q *Query) UpdateIndex(operator rune) {
 		return
 	}
 	defer f.Close()
+
 	for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
 		field := q.ResourceType.Elem().Field(i)
 		tag := field.Tag.Get("gorialize")
@@ -537,17 +538,20 @@ func (q *Query) UpdateIndex(operator rune) {
 			value := reflect.Indirect(
 				reflect.ValueOf(q.Resource),
 			).FieldByName(field.Name).Interface()
+
+			logEntry := fmt.Sprintf("%c%s:%s:%v=%d", operator, q.Model, field.Name, value, q.ID)
+			_, err = f.WriteString(logEntry + "\n")
+			if err != nil {
+				q.FatalError = err
+				return
+			}
+			q.IndexUpdates = append(q.IndexUpdates, logEntry)
+
 			if operator == '+' {
 				q.Dir.Index.appendID(q.Model, field.Name, value, q.ID)
 			} else {
 				q.Dir.Index.removeID(q.Model, field.Name, value, q.ID)
 			}
-			logEntry := fmt.Sprintf("%c%s:%s:%v=%d", operator, q.Model, field.Name, value, q.ID)
-			_, err = f.WriteString(logEntry + "\n")
-			if err != nil {
-				q.FatalError = err
-			}
-			q.IndexUpdates = append(q.IndexUpdates, logEntry)
 		}
 	}
 }
@@ -719,7 +723,6 @@ func (q *Query) ExitIfDirNotExist() {
 		return
 	}
 	if _, err := os.Stat(q.DirPath); os.IsNotExist(err) {
-		fmt.Println(q.DirPath)
 		q.FatalError = errors.New("Directory does not exist")
 	}
 }
@@ -829,6 +832,7 @@ func (q *Query) EncryptGobBuffer() {
 	}
 	if q.Dir.Key == nil {
 		q.FatalError = errors.New("Encryption key missing")
+		return
 	}
 	var block cipher.Block
 	block, q.FatalError = aes.NewCipher(q.Dir.Key[:])
@@ -857,6 +861,7 @@ func (q *Query) DecryptGobBuffer() {
 	}
 	if q.Dir.Key == nil {
 		q.FatalError = errors.New("Decryption key missing")
+		return
 	}
 	var block cipher.Block
 	block, q.FatalError = aes.NewCipher(q.Dir.Key[:])
