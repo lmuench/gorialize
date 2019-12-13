@@ -1,3 +1,4 @@
+// Package gorialize is an embedded database that stores Go structs serialized to gobs
 package gorialize
 
 import (
