@@ -5,43 +5,48 @@ import (
 	"fmt"
 )
 
-type Index map[string][]int
+type Index struct {
+	IDs  map[string][]int
+	Keys map[int][]string
+}
+
+func NewIndex() Index {
+	return Index{
+		IDs: map[string][]int{},
+		Keys: map[int][]string{},
+	}
+}
 
 func (idx Index) getIDs(model string, field string, value interface{}) (ids []int, ok bool) {
 	key := makeKey(model, field, value)
-	ids, ok = idx[key]
+	ids, ok = idx.IDs[key]
 	return
 }
 
-func (idx Index) appendID(model string, field string, value interface{}, id int) {
+func (idx Index) add(model string, field string, value interface{}, id int) {
 	key := makeKey(model, field, value)
-	idx[key] = append(idx[key], id)
+	idx.IDs[key] = append(idx.IDs[key], id)
+	idx.Keys[id] = append(idx.Keys[id], key)
 }
 
-func (idx Index) appendIDbyKey(key string, id int) {
-	idx[key] = append(idx[key], id)
+func (idx Index) setDirectly(key string, id int) {
+	idx.IDs[key] = append(idx.IDs[key], id)
+	idx.Keys[id] = append(idx.Keys[id], key)
 }
 
-func (idx Index) removeID(model string, field string, value interface{}, id int) {
-	key := makeKey(model, field, value)
-	for i := range idx[key] {
-		if idx[key][i] == id {
-			idx[key][i] = idx[key][len(idx[key])-1]
-			idx[key] = idx[key][:len(idx[key])-1]
-			break
+func (idx Index) remove(id int) {
+	keys := idx.Keys[id]
+	for _, key := range keys {
+		for i := range idx.IDs[key] {
+			last := len(idx.IDs[key])-1
+			if idx.IDs[key][i] == id {
+				idx.IDs[key][i] = idx.IDs[key][last]
+				idx.IDs[key] = idx.IDs[key][:last]
+				break
+			}
 		}
 	}
-}
-
-func (idx Index) removeIDbyKey(key string, id int) {
-	for i := range idx[key] {
-		if idx[key][i] == id {
-			last := len(idx[key])-1
-			idx[key][i] = idx[key][last]
-			idx[key] = idx[key][:last]
-			break
-		}
-	}
+	delete(idx.Keys, id)
 }
 
 func makeKey(model string, field string, value interface{}) (key string) {

@@ -99,28 +99,33 @@ func (q *Query) UpdateIndex(operator rune) {
 	}
 	defer f.Close()
 
-	for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
-		field := q.ResourceType.Elem().Field(i)
-		tag := field.Tag.Get("gorialize")
-		if tag == "indexed" {
-			value := reflect.Indirect(
-				reflect.ValueOf(q.Resource),
-			).FieldByName(field.Name).Interface()
+	if operator == '+' {
+		for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
+			field := q.ResourceType.Elem().Field(i)
+			tag := field.Tag.Get("gorialize")
+			if tag == "indexed" {
+				value := reflect.Indirect(
+					reflect.ValueOf(q.Resource),
+				).FieldByName(field.Name).Interface()
 
-			logEntry := fmt.Sprintf("%c%s:%s:%v=%d", operator, q.Model, field.Name, value, q.ID)
-			_, err = f.WriteString(logEntry + "\n")
-			if err != nil {
-				q.FatalError = err
-				return
-			}
-			q.IndexUpdates = append(q.IndexUpdates, logEntry)
-
-			if operator == '+' {
-				q.Dir.Index.appendID(q.Model, field.Name, value, q.ID)
-			} else {
-				q.Dir.Index.removeID(q.Model, field.Name, value, q.ID)
+				logEntry := fmt.Sprintf("+%s:%s:%v=%d", q.Model, field.Name, value, q.ID)
+				_, err = f.WriteString(logEntry + "\n")
+				if err != nil {
+					q.FatalError = err
+					return
+				}
+				q.IndexUpdates = append(q.IndexUpdates, logEntry)
+				q.Dir.Index.add(q.Model, field.Name, value, q.ID)
 			}
 		}
+	} else {
+		logEntry := fmt.Sprintf("-=%d", q.ID)
+		_, err = f.WriteString(logEntry + "\n")
+		if err != nil {
+			q.FatalError = err
+			return
+		}
+		q.Dir.Index.remove(q.ID)
 	}
 }
 

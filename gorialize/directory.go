@@ -35,7 +35,7 @@ func NewDirectory(config DirectoryConfig) *Directory {
 	dir := &Directory{
 		Path:         config.Path,
 		Log:          config.Log,
-		Index:        Index{},
+		Index:        NewIndex(),
 		IndexLogPath: config.Path + "/.idxlog",
 	}
 
@@ -64,7 +64,7 @@ func (dir Directory) ReplayIndexLog() {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) < 7 {
+		if len(line) < 3 {
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
 		var id []byte
@@ -84,9 +84,9 @@ func (dir Directory) ReplayIndexLog() {
 		op := line[0]
 		switch op {
 		case '+':
-			dir.Index.appendIDbyKey(key, ID)
+			dir.Index.setDirectly(key, ID)
 		case '-':
-			dir.Index.removeIDbyKey(key, ID)
+			dir.Index.remove(ID)
 		default:
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
