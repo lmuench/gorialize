@@ -175,7 +175,7 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeOnly.ID)
+		err = dir.PartialReplace(userNameOnly, userAgeOnly.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -208,7 +208,7 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeAndName.ID)
+		err = dir.PartialReplace(userNameOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -241,7 +241,7 @@ func TestUpdate(t *testing.T) {
 			Age: uint(faker.Number().NumberInt(2)),
 		}
 
-		err = dir.Update(userAgeOnly, userAgeAndName.ID)
+		err = dir.PartialReplace(userAgeOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}

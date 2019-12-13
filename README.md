@@ -82,11 +82,11 @@ func (dir Directory) Replace(resource interface{}) error
 ```
 Replace replaces a serialized resource
 
-#### Update
+#### PartialReplace
 ```Go
-func (dir Directory) Update(resource interface{}, id int) error
+func (dir Directory) PartialReplace(resource interface{}, id int) error
 ```
-Update partially updates a serialized resource with all non-zero values of the given resource.
+PartialReplace partially replaces a serialized resource with all non-zero values of the given resource.
 
 #### Delete
 ```Go

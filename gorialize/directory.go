@@ -284,8 +284,8 @@ func (dir Directory) Replace(resource interface{}) error {
 	return q.FatalError
 }
 
-// Update partially updates a serialized resource with all non-zero values of the given resource.
-func (dir Directory) Update(resource interface{}, id int) error {
+// PartialReplace partially replaces a serialized resource with all non-zero values of the given resource.
+func (dir Directory) PartialReplace(resource interface{}, id int) error {
 	err := dir.Create(resource)
 	if err != nil {
 		return err
