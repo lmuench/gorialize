@@ -8,13 +8,13 @@ import (
 type Index map[string][]int
 
 func (idx Index) getIDs(model string, field string, value interface{}) (ids []int, ok bool) {
-	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	key := makeKey(model, field, value)
 	ids, ok = idx[key]
 	return
 }
 
 func (idx Index) appendID(model string, field string, value interface{}, id int) {
-	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	key := makeKey(model, field, value)
 	idx[key] = append(idx[key], id)
 }
 
@@ -23,7 +23,7 @@ func (idx Index) appendIDbyKey(key string, id int) {
 }
 
 func (idx Index) removeID(model string, field string, value interface{}, id int) {
-	key := fmt.Sprintf("%s:%s:%v", model, field, value)
+	key := makeKey(model, field, value)
 	for i := range idx[key] {
 		if idx[key][i] == id {
 			idx[key][i] = idx[key][len(idx[key])-1]
@@ -41,4 +41,9 @@ func (idx Index) removeIDbyKey(key string, id int) {
 			break
 		}
 	}
+}
+
+func makeKey(model string, field string, value interface{}) (key string) {
+	key = fmt.Sprintf("%s:%s:%v", model, field, value)
+	return
 }
