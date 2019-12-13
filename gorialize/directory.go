@@ -285,7 +285,6 @@ func (dir Directory) Replace(resource interface{}) error {
 }
 
 // Update partially updates a serialized resource with all non-zero values of the given resource.
-// TODO: update index and append to index change log
 func (dir Directory) Update(resource interface{}, id int) error {
 	err := dir.Create(resource)
 	if err != nil {
@@ -325,7 +324,6 @@ func (dir Directory) Update(resource interface{}, id int) error {
 }
 
 // Delete deletes a serialized resource.
-// TODO: update index and append to index change log
 func (dir Directory) Delete(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -349,7 +347,6 @@ func (dir Directory) Delete(resource interface{}) error {
 }
 
 // DeleteAll deletes all serialized resources of the given type.
-// TODO: update index and append to index change log
 func (dir Directory) DeleteAll(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
