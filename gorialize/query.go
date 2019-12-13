@@ -109,6 +109,7 @@ func (q *Query) UpdateIndex(operator rune) {
 			return
 		}
 		q.Dir.Index.remove(q.ID)
+		q.IndexUpdates = append(q.IndexUpdates, logEntry)
 	}
 	if operator == '+' || operator == 'x' {
 		for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
@@ -125,8 +126,8 @@ func (q *Query) UpdateIndex(operator rune) {
 					q.FatalError = err
 					return
 				}
-				q.IndexUpdates = append(q.IndexUpdates, logEntry)
 				q.Dir.Index.add(q.Model, field.Name, value, q.ID)
+				q.IndexUpdates = append(q.IndexUpdates, logEntry)
 			}
 		}
 	}
