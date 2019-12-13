@@ -81,14 +81,16 @@ func (q *Query) ReflectModelNameFromType() {
 	q.Model = q.ResourceType.String()[1:]
 }
 
+// UpdateIndex updates the index based on operator:
+// '+' = add, '-' = remove, 'x' = replace
 func (q *Query) UpdateIndex(operator rune) {
 	if q.FatalError != nil {
 		return
 	}
-	if operator != '+' && operator != '-' {
+	if operator != '+' && operator != '-' && operator != 'x' {
 		q.FatalError = errors.New("Unknown index operator")
 	}
-	if q.ResourceType == nil {
+	if operator != '-' && q.ResourceType == nil {
 		q.FatalError = errors.New("Resource type missing")
 		return
 	}
@@ -99,7 +101,16 @@ func (q *Query) UpdateIndex(operator rune) {
 	}
 	defer f.Close()
 
-	if operator == '+' {
+	if operator == '-' || operator == 'x' {
+		logEntry := fmt.Sprintf("-=%d", q.ID)
+		_, err = f.WriteString(logEntry + "\n")
+		if err != nil {
+			q.FatalError = err
+			return
+		}
+		q.Dir.Index.remove(q.ID)
+	}
+	if operator == '+' || operator == 'x' {
 		for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
 			field := q.ResourceType.Elem().Field(i)
 			tag := field.Tag.Get("gorialize")
@@ -118,14 +129,6 @@ func (q *Query) UpdateIndex(operator rune) {
 				q.Dir.Index.add(q.Model, field.Name, value, q.ID)
 			}
 		}
-	} else {
-		logEntry := fmt.Sprintf("-=%d", q.ID)
-		_, err = f.WriteString(logEntry + "\n")
-		if err != nil {
-			q.FatalError = err
-			return
-		}
-		q.Dir.Index.remove(q.ID)
 	}
 }
 

@@ -280,6 +280,7 @@ func (dir Directory) Replace(resource interface{}) error {
 	q.EncryptGobBuffer()
 	q.BuildResourcePath()
 	q.WriteGobToDisk()
+	q.UpdateIndex('x')
 	q.Log()
 	return q.FatalError
 }
