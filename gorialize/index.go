@@ -36,8 +36,9 @@ func (idx Index) removeID(model string, field string, value interface{}, id int)
 func (idx Index) removeIDbyKey(key string, id int) {
 	for i := range idx[key] {
 		if idx[key][i] == id {
-			idx[key][i] = idx[key][len(idx[key])-1]
-			idx[key] = idx[key][:len(idx[key])-1]
+			last := len(idx[key])-1
+			idx[key][i] = idx[key][last]
+			idx[key] = idx[key][:last]
 			break
 		}
 	}
