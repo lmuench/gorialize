@@ -364,7 +364,7 @@ func TestGetOwner(t *testing.T) {
 type userV3 struct {
 	ID   int
 	Name string `gorialize:"indexed"`
-	Age  uint
+	Age  uint   `gorialize:"indexed"`
 }
 
 func TestIndexAfterCreate(t *testing.T) {
@@ -462,13 +462,60 @@ func TestFind(t *testing.T) {
 		}
 
 		foundUser := &userV3{}
-		err = dir.Find(foundUser, Where{Field: "Name", Value: name})
+		err = dir.Find(foundUser, Where{Field: "Name", Equals: name})
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !reflect.DeepEqual(foundUser, newUser) {
 			t.Fatal("Users don't equal")
 		}
+	}
+
+	afterEach()
+}
+
+func TestFindAllCB(t *testing.T) {
+	beforeEach()
+
+	newUsers := []userV3{}
+	for _, age := range []int{17, 36, 23, 56, 19, 23} {
+		user := userV3{
+			Name: faker.Name().Name(),
+			Age: uint(age),
+		}
+		err := dir.Create(&user)
+		if err != nil {
+			t.Fatal(err)
+		}
+		newUsers = append(newUsers, user)
+	}
+
+	serializedUsers := []userV3{}
+	err := dir.FindAllCB(
+		&userV3{},
+		func(resource interface{}) {
+			serializedUsers = append(serializedUsers, *resource.(*userV3))
+		}, Where{
+			Field: "Age",
+			Equals: 23,
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actualCnt := len(serializedUsers)
+	expectedCnt := 2
+	if actualCnt != expectedCnt {
+		t.Fatalf("Found: %d, expected: %d", actualCnt, expectedCnt)
+	}
+
+	expectedUsers := []userV3{
+		newUsers[2],
+		newUsers[5],
+	}	
+	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
+		t.Fatal("Found users don't match expected users")
 	}
 
 	afterEach()

@@ -41,8 +41,10 @@ type Query struct {
 }
 
 type Where struct {
-	Field string
-	Value interface{}
+	Field  string
+	Equals interface{}
+	In     []interface{}
+	Range  []int
 }
 
 func (q Query) Log() {
@@ -383,6 +385,9 @@ func (q *Query) DeleteFromDisk() {
 }
 
 func (q *Query) ThwartIOBasePathEscape() {
+	if q.FatalError != nil {
+		return
+	}
 	if !strings.HasPrefix(q.DirPath, q.Dir.Path) {
 		q.SafeIOPath = false
 		q.Log()
@@ -477,23 +482,18 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 	}
 	idCountMap := make(map[int]int, 1)
 	for _, clause := range q.WhereClauses {
-		ids, ok := q.Dir.Index.getIDs(q.Model, clause.Field, clause.Value)
+		ids, ok := q.Dir.Index.getIDs(q.Model, clause.Field, clause.Equals)
 		if ok {
 			for _, id := range ids {
 				idCountMap[id] += 1
-				if pickFirst {
-					if idCountMap[id] == whereClauseCount {
-						q.MatchedIDs = append(q.MatchedIDs, id)
+				if idCountMap[id] == whereClauseCount {
+					q.MatchedIDs = append(q.MatchedIDs, id)
+					if pickFirst {
 						q.ID = int(id)
 						return
 					}
 				}
 			}
-		}
-	}
-	for id, v := range idCountMap {
-		if v == whereClauseCount {
-			q.MatchedIDs = append(q.MatchedIDs, id)
 		}
 	}
 	if len(q.MatchedIDs) == 0 {

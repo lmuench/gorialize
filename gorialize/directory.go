@@ -208,13 +208,13 @@ func (dir Directory) ReadAll(slice interface{}) error {
 	return err
 }
 
-// ReadAllCB reads all serialized resource of the given type and calls the provided callback function on each.
+// ReadAllCB reads all serialized resources of the given type and calls the provided callback function on each.
 func (dir Directory) ReadAllCB(resource interface{}, callback func(resource interface{})) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var err error
 
-	q := dir.newQueryWithoutID("read", resource)
+	q := dir.newQueryWithoutID("read all", resource)
 	q.ReflectTypeOfResource()
 	q.ReflectModelNameFromType()
 	q.BuildDirPath()
@@ -241,12 +241,12 @@ func (dir Directory) ReadAllCB(resource interface{}, callback func(resource inte
 
 // Find reads the first serialized resources matching the given WHERE clauses
 // Note: WHERE clauses can only be used with indexed fields.
-func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
+func (dir Directory) Find(resource interface{}, clauses ...Where) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	q := dir.newQueryWithoutID("find", resource)
-	q.WhereClauses = whereClauses
+	q.WhereClauses = clauses
 	q.ReflectTypeOfResource()
 	q.ReflectModelNameFromType()
 	q.ApplyWhereClauses(true)
@@ -258,6 +258,32 @@ func (dir Directory) Find(resource interface{}, whereClauses ...Where) error {
 	q.DecryptGobBuffer()
 	q.DecodeGobToResource()
 	q.Log()
+	return q.FatalError
+}
+
+// FindAllCB finds all serialized resource of the given type matching all
+// provided WHERE clauses and calls the provided callback function on each.
+func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	q := dir.newQueryWithoutID("find all", resource)
+	q.WhereClauses = clauses
+	q.ReflectTypeOfResource()
+	q.ReflectModelNameFromType()
+	q.ApplyWhereClauses(false)
+	q.BuildDirPath()
+	q.ThwartIOBasePathEscape()
+	q.ExitIfDirNotExist()
+	for _, id := range q.MatchedIDs {
+		q.ID = id
+		q.BuildResourcePath()
+		q.ReadGobFromDisk()
+		q.DecryptGobBuffer()
+		q.DecodeGobToResource()
+		q.PassResourceToCallback(callback)
+		q.Log()
+	}
 	return q.FatalError
 }
 
@@ -317,7 +343,7 @@ func (dir Directory) DeleteAll(resource interface{}) error {
 	defer mutex.Unlock()
 	var err error
 
-	q := dir.newQueryWithoutID("delete", resource)
+	q := dir.newQueryWithoutID("delete all", resource)
 	q.ReflectTypeOfResource()
 	q.ReflectModelNameFromType()
 	q.BuildDirPath()
