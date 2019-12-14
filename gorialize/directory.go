@@ -288,45 +288,6 @@ func (dir Directory) Replace(resource interface{}) error {
 	return q.FatalError
 }
 
-// PartialReplace partially replaces a serialized resource with all non-zero values of the given resource.
-func (dir Directory) PartialReplace(resource interface{}, id int) error {
-	err := dir.Create(resource)
-	if err != nil {
-		return err
-	}
-
-	tmpID, err := getID(resource)
-	if err != nil {
-		return err
-	}
-
-	err = dir.Read(resource, id)
-	if err != nil {
-		return err
-	}
-
-	err = dir.Read(resource, tmpID)
-	if err != nil {
-		return err
-	}
-
-	err = setID(resource, id)
-	if err != nil {
-		return err
-	}
-	err = dir.Replace(resource)
-	if err != nil {
-		return err
-	}
-
-	err = setID(resource, tmpID)
-	if err != nil {
-		return err
-	}
-	err = dir.Delete(resource)
-	return err
-}
-
 // Delete deletes a serialized resource.
 func (dir Directory) Delete(resource interface{}) error {
 	mutex.Lock()
