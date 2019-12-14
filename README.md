@@ -1,11 +1,11 @@
 # Gorialize
-Gorialize is a serialization framework for Go. It aims to provide an embedded persistence layer for applications that do not require all the features of a database. Gorialize lets you serialize your structs and other data types to [gobs](https://golang.org/pkg/encoding/gob/) while organizing the serialized data like a database. It provides a CRUD API that accepts any struct with an addressable `ID` field of type `int`. Those types of structs have to be passed to Gorialize's methods by reference and are named `resource` in the method header.
+Gorialize is an embedded database that stores Go structs serialized to [gobs](https://golang.org/pkg/encoding/gob/).
 
 #### Example Resource Type
 ```Go
 type User struct {
     ID   int  // <-- required field
-    Name string
+    Name string `gorialize:"indexed"`
 }
 ```
 
@@ -31,6 +31,15 @@ type DirectoryConfig struct {
 ```
 DirectoryConfig holds parameters to be passed to NewDirectory().
 
+#### Where
+```Go
+type Where struct {
+    Field Field
+    Value Value
+}
+```
+Where clauses can be passed to Find()
+
 #### NewDirectory
 ```Go
 func NewDirectory(config DirectoryConfig) *Directory
@@ -49,17 +58,23 @@ func (dir Directory) Read(resource interface{}, id int) error
 ```
 Read reads the serialized resource with the given ID.
 
-#### ReadAllIntoSlice
-```Go
-func (dir Directory) ReadAllIntoSlice(slice interface{}) error {
-```
-ReadAllIntoSlice reads all serialized resources of the given slice's elements's type and writes them into the slice.
-
 #### ReadAll
 ```Go
-func (dir Directory) ReadAll(resource interface{}, callback func(resource interface{})) error
+func (dir Directory) ReadAll(slice interface{}) error {
 ```
-ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
+ReadAll reads all serialized resources of the given slice's elements's type and appends them to the slice.
+
+#### ReadAllCB
+```Go
+func (dir Directory) ReadAllCB(resource interface{}, callback func(resource interface{})) error
+```
+ReadAllCB reads all serialized resource of the given type and calls the provided callback function on each.
+
+#### Find
+Find reads the first serialized resources matching the given WHERE clauses
+```Go
+func (dir Directory) Find(resource interface{}, whereClauses ...Where) error
+```
 
 #### Replace
 ```Go
@@ -67,11 +82,11 @@ func (dir Directory) Replace(resource interface{}) error
 ```
 Replace replaces a serialized resource
 
-#### Update
+#### PartialReplace
 ```Go
-func (dir Directory) Update(resource interface{}, id int) error
+func (dir Directory) PartialReplace(resource interface{}, id int) error
 ```
-Update partially updates a serialized resource with all non-zero values of the given resource.
+PartialReplace partially replaces a serialized resource with all non-zero values of the given resource.
 
 #### Delete
 ```Go

@@ -15,14 +15,6 @@ type user struct {
 	Age  uint
 }
 
-func (self *user) GetID() int {
-	return self.ID
-}
-
-func (self *user) SetID(ID int) {
-	self.ID = ID
-}
-
 type userV2 struct {
 	ID        int
 	Name      string
@@ -38,14 +30,6 @@ type todoItem struct {
 	ID         int
 	TodoListID int
 	Text       string
-}
-
-func (self *userV2) GetID() int {
-	return self.ID
-}
-
-func (self *userV2) SetID(ID int) {
-	self.ID = ID
 }
 
 var dir *Directory
@@ -191,7 +175,7 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeOnly.ID)
+		err = dir.PartialReplace(userNameOnly, userAgeOnly.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -224,7 +208,7 @@ func TestUpdate(t *testing.T) {
 			Name: faker.Name().Name(),
 		}
 
-		err = dir.Update(userNameOnly, userAgeAndName.ID)
+		err = dir.PartialReplace(userNameOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -257,7 +241,7 @@ func TestUpdate(t *testing.T) {
 			Age: uint(faker.Number().NumberInt(2)),
 		}
 
-		err = dir.Update(userAgeOnly, userAgeAndName.ID)
+		err = dir.PartialReplace(userAgeOnly, userAgeAndName.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -318,7 +302,7 @@ func TestDelete(t *testing.T) {
 	afterEach()
 }
 
-func TestReadAll(t *testing.T) {
+func TestReadAllCB(t *testing.T) {
 	beforeEach()
 	err := dir.ResetCounter(&user{})
 	if err != nil {
@@ -345,7 +329,7 @@ func TestReadAll(t *testing.T) {
 	}
 
 	unorderedSerializedUsers := make(map[int]user)
-	err = dir.ReadAll(&user{}, func(resource interface{}) {
+	err = dir.ReadAllCB(&user{}, func(resource interface{}) {
 		user := *resource.(*user)
 		unorderedSerializedUsers[user.ID] = user
 	})
@@ -358,7 +342,7 @@ func TestReadAll(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAll(&user{}, func(resource interface{}) {
+	err = dir.ReadAllCB(&user{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*user))
 	})
 	if err != nil {
@@ -372,7 +356,7 @@ func TestReadAll(t *testing.T) {
 	afterEach()
 }
 
-func TestReadAllIntoSlice(t *testing.T) {
+func TestReadAll(t *testing.T) {
 	beforeEach()
 	err := dir.ResetCounter(&user{})
 	if err != nil {
@@ -394,7 +378,7 @@ func TestReadAllIntoSlice(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAllIntoSlice(&serializedUsers)
+	err = dir.ReadAll(&serializedUsers)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,6 +459,119 @@ func TestGetOwner(t *testing.T) {
 		}
 		if serializedTodoList.Title != newTodoList.Title {
 			t.Fatal("Titles don't equal")
+		}
+	}
+
+	afterEach()
+}
+
+type userV3 struct {
+	ID   int
+	Name string `gorialize:"indexed"`
+	Age  uint
+}
+
+func TestIndexAfterCreate(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		name := faker.Name().Name()
+		newUser := &userV3{
+			Name: name,
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ids, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if !ok {
+			t.Fatal("Index doesn't contain entry")
+		}
+		if len(ids) < 1 {
+			t.Fatal("Index points to empty ID slice")
+		}
+		// TODO: Test duplicate names.
+		// Below would fail if faker would randomly create the same name twice.
+		if ids[0] != newUser.ID {
+			t.Fatal("Indexed name doesn't point to correct ID")
+		}
+	}
+
+	afterEach()
+}
+
+func TestIndexAfterDelete(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		name := faker.Name().Name()
+		newUser := &userV3{
+			Name: name,
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		serializedUser := &userV3{}
+		err = dir.Read(serializedUser, newUser.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ids, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if !ok {
+			t.Fatal("Index doesn't contain entry")
+		}
+		if len(ids) < 1 {
+			t.Fatal("Index points to empty ID slice")
+		}
+		// TODO: Test duplicate names.
+		// Below would fail if faker would randomly create the same name twice.
+		if ids[0] != newUser.ID {
+			t.Fatal("Indexed name doesn't point to correct ID")
+		}
+
+		err = dir.Delete(serializedUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ids2, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if ok {
+			if len(ids2) > 0 {
+				t.Fatal("Index still contains entry")
+			}
+		}
+	}
+
+	afterEach()
+}
+
+func TestFind(t *testing.T) {
+	beforeEach()
+
+	for i := 0; i < testIterationCount; i++ {
+		name := faker.Name().Name()
+		newUser := &userV3{
+			Name: name,
+			Age:  uint(faker.Number().NumberInt(2)),
+		}
+		err := dir.Create(newUser)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		foundUser := &userV3{}
+		err = dir.Find(foundUser, Where{Field: "Name", Value: name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(foundUser, newUser) {
+			t.Fatal("Users don't equal")
 		}
 	}
 
