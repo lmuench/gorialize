@@ -302,7 +302,7 @@ func TestDelete(t *testing.T) {
 	afterEach()
 }
 
-func TestReadAll(t *testing.T) {
+func TestReadAllCB(t *testing.T) {
 	beforeEach()
 	err := dir.ResetCounter(&user{})
 	if err != nil {
@@ -329,7 +329,7 @@ func TestReadAll(t *testing.T) {
 	}
 
 	unorderedSerializedUsers := make(map[int]user)
-	err = dir.ReadAll(&user{}, func(resource interface{}) {
+	err = dir.ReadAllCB(&user{}, func(resource interface{}) {
 		user := *resource.(*user)
 		unorderedSerializedUsers[user.ID] = user
 	})
@@ -342,7 +342,7 @@ func TestReadAll(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAll(&user{}, func(resource interface{}) {
+	err = dir.ReadAllCB(&user{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*user))
 	})
 	if err != nil {
@@ -356,7 +356,7 @@ func TestReadAll(t *testing.T) {
 	afterEach()
 }
 
-func TestReadAllIntoSlice(t *testing.T) {
+func TestReadAll(t *testing.T) {
 	beforeEach()
 	err := dir.ResetCounter(&user{})
 	if err != nil {
@@ -378,7 +378,7 @@ func TestReadAllIntoSlice(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAllIntoSlice(&serializedUsers)
+	err = dir.ReadAll(&serializedUsers)
 	if err != nil {
 		t.Fatal(err)
 	}

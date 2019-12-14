@@ -58,17 +58,17 @@ func (dir Directory) Read(resource interface{}, id int) error
 ```
 Read reads the serialized resource with the given ID.
 
-#### ReadAllIntoSlice
-```Go
-func (dir Directory) ReadAllIntoSlice(slice interface{}) error {
-```
-ReadAllIntoSlice reads all serialized resources of the given slice's elements's type and writes them into the slice.
-
 #### ReadAll
 ```Go
-func (dir Directory) ReadAll(resource interface{}, callback func(resource interface{})) error
+func (dir Directory) ReadAll(slice interface{}) error {
 ```
-ReadAll reads all serialized resource of the given type and calls the provided callback function on each.
+ReadAll reads all serialized resources of the given slice's elements's type and appends them to the slice.
+
+#### ReadAllCB
+```Go
+func (dir Directory) ReadAllCB(resource interface{}, callback func(resource interface{})) error
+```
+ReadAllCB reads all serialized resource of the given type and calls the provided callback function on each.
 
 #### Find
 Find reads the first serialized resources matching the given WHERE clauses
