@@ -64,17 +64,17 @@ func (dir Directory) ReplayIndexLog() {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) < 3 {
+		if len(line) < 4 {
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
 		var id []byte
-		var key string
+		var kv string
 		for i := len(line) - 1; i >= 0; i-- {
-			if line[i] != '=' {
-				id = append(id, line[i])
-			} else {
-				key = line[1:i]
+			if line[i] == '=' || line[i] == ':' {
+				kv = line[1:i]
 				break
+			} else {
+				id = append(id, line[i])
 			}
 		}
 		ID, err := strconv.Atoi(string(id))
@@ -84,9 +84,12 @@ func (dir Directory) ReplayIndexLog() {
 		op := line[0]
 		switch op {
 		case '+':
-			dir.Index.setDirectly(key, ID)
+			err := dir.Index.addDirectly(kv, ID)
+			if err != nil {
+				log.Fatalf("IndexLog contains unprocessable line: %s", line)
+			}
 		case '-':
-			dir.Index.remove(ID)
+			dir.Index.removeDirectly(kv, ID)
 		default:
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}

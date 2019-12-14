@@ -101,25 +101,25 @@ func (q *Query) UpdateIndex(operator rune) {
 	}
 	defer f.Close()
 
-	if operator == '-' || operator == 'x' {
-		logEntry := fmt.Sprintf("-=%d", q.ID)
-		_, err = f.WriteString(logEntry + "\n")
-		if err != nil {
-			q.FatalError = err
-			return
-		}
-		q.Dir.Index.remove(q.ID)
-		q.IndexUpdates = append(q.IndexUpdates, logEntry)
-	}
-	if operator == '+' || operator == 'x' {
-		for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
-			field := q.ResourceType.Elem().Field(i)
-			tag := field.Tag.Get("gorialize")
-			if tag == "indexed" {
-				value := reflect.Indirect(
-					reflect.ValueOf(q.Resource),
-				).FieldByName(field.Name).Interface()
+	for i := 0; i < q.ResourceType.Elem().NumField(); i++ {
+		field := q.ResourceType.Elem().Field(i)
+		tag := field.Tag.Get("gorialize")
+		if tag == "indexed" {
+			value := reflect.Indirect(
+				reflect.ValueOf(q.Resource),
+			).FieldByName(field.Name).Interface()
 
+			if operator == '-' || operator == 'x' {
+				logEntry := fmt.Sprintf("-%s:%s:%d", q.Model, field.Name, q.ID)
+				_, err = f.WriteString(logEntry + "\n")
+				if err != nil {
+					q.FatalError = err
+					return
+				}
+				q.Dir.Index.remove(q.Model, field.Name, q.ID)
+				q.IndexUpdates = append(q.IndexUpdates, logEntry)
+			}
+			if operator == '+' || operator == 'x' {
 				logEntry := fmt.Sprintf("+%s:%s:%v=%d", q.Model, field.Name, value, q.ID)
 				_, err = f.WriteString(logEntry + "\n")
 				if err != nil {
