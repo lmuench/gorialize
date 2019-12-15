@@ -240,38 +240,16 @@ func (dir Directory) ReadAllCB(resource interface{}, callback func(resource inte
 	return q.FatalError
 }
 
-// Find reads the first serialized resources matching the given WHERE clauses
-// Note: WHERE clauses can only be used with indexed fields.
-func (dir Directory) Find(resource interface{}, clauses ...Where) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	q := dir.newQueryWithoutID("find", resource)
-	q.WhereClauses = clauses
-	q.ReflectTypeOfResource()
-	q.ReflectModelNameFromType()
-	q.ApplyWhereClauses(true)
-	q.BuildDirPath()
-	q.ThwartIOBasePathEscape()
-	q.ExitIfDirNotExist()
-	q.BuildResourcePath()
-	q.ReadGobFromDisk()
-	q.DecryptGobBuffer()
-	q.DecodeGobToResource()
-	q.Log()
-	return q.FatalError
-}
-
-// FindAll finds all serialized resource of the given slice's element
+// Find finds all serialized resource of the given slice's element
 // type matching all provided WHERE clauses and appends them to the slice.
-func (dir Directory) FindAll(slice interface{}, clauses ...Where) error {
+func (dir Directory) Find(slice interface{}, clauses ...Where) error {
 	slicePtr := reflect.ValueOf(slice)
 	sliceVal := reflect.Indirect(slicePtr)
 	resourceTyp := reflect.TypeOf(slice).Elem().Elem()
 	resourceVal := reflect.New(resourceTyp)
 	resource := resourceVal.Interface()
 
-	err := dir.FindAllCB(resource, func(resource interface{}) {
+	err := dir.FindCB(resource, func(resource interface{}) {
 		resourcePtr := reflect.ValueOf(resource)
 		resourceVal := reflect.Indirect(resourcePtr)
 		sliceVal.Set(reflect.Append(sliceVal, resourceVal))
@@ -279,9 +257,9 @@ func (dir Directory) FindAll(slice interface{}, clauses ...Where) error {
 	return err
 }
 
-// FindAllCB finds all serialized resource of the given type matching all
+// FindCB finds all serialized resource of the given type matching all
 // provided WHERE clauses and calls the provided callback function on each.
-func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error {
+func (dir Directory) FindCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -289,7 +267,7 @@ func (dir Directory) FindAllCB(resource interface{}, callback func(resource inte
 	q.WhereClauses = clauses
 	q.ReflectTypeOfResource()
 	q.ReflectModelNameFromType()
-	q.ApplyWhereClauses(false)
+	q.ApplyWhereClauses()
 	q.BuildDirPath()
 	q.ThwartIOBasePathEscape()
 	q.ExitIfDirNotExist()

@@ -74,21 +74,15 @@ ReadAllCB reads all serialized resources of the given type and calls the provide
 
 #### Find
 ```Go
-func (dir Directory) Find(resource interface{}, clauses ...Where) error
+func (dir Directory) Find(slice interface{}, clauses ...Where) error
 ```
-Find reads the first serialized resources matching the given WHERE clauses
+Find finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
 
-#### FindAll
+## FindCB
 ```Go
-func (dir Directory) FindAll(slice interface{}, clauses ...Where) error
+func (dir Directory) FindCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
-FindAll finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
-
-## FindAllCB
-```Go
-func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
-```
-FindAllCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
+FindCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
 
 #### Replace
 ```Go

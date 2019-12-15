@@ -443,34 +443,7 @@ func TestIndexAfterDelete(t *testing.T) {
 	afterEach()
 }
 
-func TestFind(t *testing.T) {
-	beforeEach()
-
-	for i := 0; i < testIterationCount; i++ {
-		name := faker.Name().Name()
-		newUser := &userV3{
-			Name: name,
-			Age:  uint(faker.Number().NumberInt(2)),
-		}
-		err := dir.Create(newUser)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		foundUser := &userV3{}
-		err = dir.Find(foundUser, Where{Field: "Name", Equals: name})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(foundUser, newUser) {
-			t.Fatal("Users don't equal")
-		}
-	}
-
-	afterEach()
-}
-
-func TestFindAllCB(t *testing.T) {
+func TestFindCB(t *testing.T) {
 	beforeEach()
 	newUsers := []userV3{}
 	for _, age := range []int{17, 36, 23, 56, 19, 23} {
@@ -486,7 +459,7 @@ func TestFindAllCB(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAllCB(&userV3{}, func(resource interface{}) {
+	err := dir.FindCB(&userV3{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*userV3))
 	}, Where{Field: "Age", Equals: 23})
 	if err != nil {
@@ -514,7 +487,7 @@ func TestFindAllCB(t *testing.T) {
 	afterEach()
 }
 
-func TestFindAll(t *testing.T) {
+func TestFind(t *testing.T) {
 	beforeEach()
 
 	newUsers := []userV3{}
@@ -531,7 +504,7 @@ func TestFindAll(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAll(&serializedUsers, Where{Field: "Age", Equals: 23})
+	err := dir.Find(&serializedUsers, Where{Field: "Age", Equals: 23})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -557,7 +530,7 @@ func TestFindAll(t *testing.T) {
 	afterEach()
 }
 
-func TestFindAllWithANDedWhereClauses(t *testing.T) {
+func TestFindWithANDedWhereClauses(t *testing.T) {
 	beforeEach()
 
 	newUsers := []userV3{}
@@ -574,7 +547,7 @@ func TestFindAllWithANDedWhereClauses(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAll(&serializedUsers,
+	err := dir.Find(&serializedUsers,
 		Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: 23}},
 	)
 	if err != nil {
@@ -602,7 +575,7 @@ func TestFindAllWithANDedWhereClauses(t *testing.T) {
 	afterEach()
 }
 
-func TestFindAllWithORedWhereClauses(t *testing.T) {
+func TestFindWithORedWhereClauses(t *testing.T) {
 	beforeEach()
 
 	newUsers := []userV3{}
@@ -619,7 +592,7 @@ func TestFindAllWithORedWhereClauses(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAll(&serializedUsers,
+	err := dir.Find(&serializedUsers,
 		Where{Field: "Age", Equals: 23},
 		Where{Field: "Age", Equals: 17},
 	)
@@ -651,7 +624,7 @@ func TestFindAllWithORedWhereClauses(t *testing.T) {
 }
 
 
-func TestFindAllWithIntPassedAsString(t *testing.T) {
+func TestFindWithIntPassedAsString(t *testing.T) {
 	beforeEach()
 
 	newUsers := []userV3{}
@@ -668,7 +641,7 @@ func TestFindAllWithIntPassedAsString(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAll(&serializedUsers,
+	err := dir.Find(&serializedUsers,
 		Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: "23"}},
 	)
 	if err != nil {

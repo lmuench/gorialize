@@ -469,7 +469,7 @@ func (q *Query) DecryptGobBuffer() {
 	)
 }
 
-func (q *Query) ApplyWhereClauses(pickFirst bool) {
+func (q *Query) ApplyWhereClauses() {
 	if q.FatalError != nil {
 		return
 	}
