@@ -306,7 +306,6 @@ func (dir Directory) FindAllCB(resource interface{}, callback func(resource inte
 }
 
 // Replace replaces a serialized resource.
-// TODO: update index and append to index change log
 func (dir Directory) Replace(resource interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()

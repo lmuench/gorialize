@@ -18,7 +18,7 @@ type Directory struct {
     Log       bool
 }
 ```
-Directory exposes methods to read and write serialized data inside a base directory.
+Directory exposes methods to read and write serialized structs inside a base directory.
 
 #### DirectoryConfig
 ```Go
@@ -31,14 +31,16 @@ type DirectoryConfig struct {
 ```
 DirectoryConfig holds parameters to be passed to NewDirectory().
 
-#### Where
+#### Where Clause
 ```Go
 type Where struct {
-    Field Field
-    Value Value
+    Field  string
+    Equals interface{}
+    In     []interface{}
+    Range  []int
 }
 ```
-Where clauses can be passed to Find()
+Where clauses can be passed to Find() and FindAll()
 
 #### NewDirectory
 ```Go
@@ -71,22 +73,22 @@ func (dir Directory) ReadAllCB(resource interface{}, callback func(resource inte
 ReadAllCB reads all serialized resources of the given type and calls the provided callback function on each.
 
 #### Find
-Find reads the first serialized resources matching the given WHERE clauses
 ```Go
 func (dir Directory) Find(resource interface{}, clauses ...Where) error
 ```
+Find reads the first serialized resources matching the given WHERE clauses
 
 #### FindAll
-FindAll finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
 ```Go
 func (dir Directory) FindAll(slice interface{}, clauses ...Where) error
 ```
+FindAll finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
 
 ## FindAllCB
-FindAllCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
 ```Go
 func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
+FindAllCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
 
 #### Replace
 ```Go
