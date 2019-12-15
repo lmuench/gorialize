@@ -68,13 +68,13 @@ func (dir Directory) ReplayIndexLog() {
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
 		var id []byte
-		var kv string
+		var key string
 		for i := len(line) - 1; i >= 0; i-- {
 			if line[i] == '=' || line[i] == ':' {
-				kv = line[1:i]
+				key = line[1:i]
 				break
 			} else {
-				id = append(id, line[i])
+				id = append([]byte{line[i]}, id...)
 			}
 		}
 		ID, err := strconv.Atoi(string(id))
@@ -84,12 +84,13 @@ func (dir Directory) ReplayIndexLog() {
 		op := line[0]
 		switch op {
 		case '+':
-			err := dir.Index.addDirectly(kv, ID)
+			err := dir.Index.addDirectly(key, ID)
 			if err != nil {
 				log.Fatalf("IndexLog contains unprocessable line: %s", line)
 			}
 		case '-':
-			dir.Index.removeDirectly(kv, ID)
+			val := line[1:]
+			dir.Index.removeDirectly(val, ID)
 		default:
 			log.Fatalf("IndexLog contains unprocessable line: %s", line)
 		}
@@ -192,7 +193,7 @@ func (dir Directory) readFromCustomSubdirectory(resource interface{}, id int, su
 	return q.FatalError
 }
 
-// ReadAll reads all serialized resources of the given slice's elements's type and appends them to the slice.
+// ReadAll reads all serialized resources of the given slice's element type and appends them to the slice.
 func (dir Directory) ReadAll(slice interface{}) error {
 	slicePtr := reflect.ValueOf(slice)
 	sliceVal := reflect.Indirect(slicePtr)
@@ -259,6 +260,23 @@ func (dir Directory) Find(resource interface{}, clauses ...Where) error {
 	q.DecodeGobToResource()
 	q.Log()
 	return q.FatalError
+}
+
+// FindAll finds all serialized resource of the given slice's element
+// type matching all provided WHERE clauses and appends them to the slice.
+func (dir Directory) FindAll(slice interface{}, clauses ...Where) error {
+	slicePtr := reflect.ValueOf(slice)
+	sliceVal := reflect.Indirect(slicePtr)
+	resourceTyp := reflect.TypeOf(slice).Elem().Elem()
+	resourceVal := reflect.New(resourceTyp)
+	resource := resourceVal.Interface()
+
+	err := dir.FindAllCB(resource, func(resource interface{}) {
+		resourcePtr := reflect.ValueOf(resource)
+		resourceVal := reflect.Indirect(resourcePtr)
+		sliceVal.Set(reflect.Append(sliceVal, resourceVal))
+	}, clauses...)
+	return err
 }
 
 // FindAllCB finds all serialized resource of the given type matching all

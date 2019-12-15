@@ -21,6 +21,12 @@ type userV2 struct {
 	Birthdate string
 }
 
+type userV3 struct {
+	ID   int
+	Name string `gorialize:"indexed"`
+	Age  uint   `gorialize:"indexed"`
+}
+
 type todoList struct {
 	ID    int
 	Title string
@@ -43,10 +49,18 @@ func beforeEach() {
 	})
 
 	_ = dir.DeleteAll(&user{})
+	_ = dir.DeleteAll(&userV2{})
+	_ = dir.DeleteAll(&userV3{})
+	_ = dir.DeleteAll(&todoList{})
+	_ = dir.DeleteAll(&todoItem{})
 }
 
 func afterEach() {
 	_ = dir.DeleteAll(&user{})
+	_ = dir.DeleteAll(&userV2{})
+	_ = dir.DeleteAll(&userV3{})
+	_ = dir.DeleteAll(&todoList{})
+	_ = dir.DeleteAll(&todoItem{})
 }
 
 func TestGetID(t *testing.T) {
@@ -200,19 +214,14 @@ func TestDelete(t *testing.T) {
 
 func TestReadAllCB(t *testing.T) {
 	beforeEach()
-	err := dir.ResetCounter(&user{})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	newUsers := []user{}
-
 	for i := 0; i < testIterationCount; i++ {
 		newUser := user{
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),
 		}
-		err = dir.Create(&newUser)
+		err := dir.Create(&newUser)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -225,7 +234,7 @@ func TestReadAllCB(t *testing.T) {
 	}
 
 	unorderedSerializedUsers := make(map[int]user)
-	err = dir.ReadAllCB(&user{}, func(resource interface{}) {
+	err := dir.ReadAllCB(&user{}, func(resource interface{}) {
 		user := *resource.(*user)
 		unorderedSerializedUsers[user.ID] = user
 	})
@@ -254,19 +263,14 @@ func TestReadAllCB(t *testing.T) {
 
 func TestReadAll(t *testing.T) {
 	beforeEach()
-	err := dir.ResetCounter(&user{})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	newUsers := []user{}
-
 	for i := 0; i < testIterationCount; i++ {
 		newUser := user{
 			Name: faker.Name().Name(),
 			Age:  uint(faker.Number().NumberInt(2)),
 		}
-		err = dir.Create(&newUser)
+		err := dir.Create(&newUser)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -274,7 +278,7 @@ func TestReadAll(t *testing.T) {
 	}
 
 	serializedUsers := []user{}
-	err = dir.ReadAll(&serializedUsers)
+	err := dir.ReadAll(&serializedUsers)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -359,12 +363,6 @@ func TestGetOwner(t *testing.T) {
 	}
 
 	afterEach()
-}
-
-type userV3 struct {
-	ID   int
-	Name string `gorialize:"indexed"`
-	Age  uint   `gorialize:"indexed"`
 }
 
 func TestIndexAfterCreate(t *testing.T) {
@@ -491,15 +489,9 @@ func TestFindAllCB(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAllCB(
-		&userV3{},
-		func(resource interface{}) {
-			serializedUsers = append(serializedUsers, *resource.(*userV3))
-		}, Where{
-			Field: "Age",
-			Equals: 23,
-		},
-	)
+	err := dir.FindAllCB(&userV3{}, func(resource interface{}) {
+		serializedUsers = append(serializedUsers, *resource.(*userV3))
+	}, Where{Field: "Age", Equals: 23,})
 	if err != nil {
 		t.Fatal(err)
 	}

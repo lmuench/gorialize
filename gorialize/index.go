@@ -7,7 +7,7 @@ import (
 )
 
 type Index struct {
-	KV  map[string][]int
+	KV map[string][]int
 	VK map[string][]string
 }
 
@@ -49,12 +49,16 @@ func (idx Index) remove(model string, field string, id int) {
 func (idx Index) removeDirectly(val string, id int) {
 	keys := idx.VK[val]
 	for _, key := range keys {
-		for i := range idx.KV[key] {
-			last := len(idx.KV[key])-1
-			if idx.KV[key][i] == id {
-				idx.KV[key][i] = idx.KV[key][last]
-				idx.KV[key] = idx.KV[key][:last]
-				break
+		last := len(idx.KV[key])-1
+		if last == 0 {
+			delete(idx.KV, key)
+		} else {
+			for i := range idx.KV[key] {
+				if idx.KV[key][i] == id {
+					idx.KV[key][i] = idx.KV[key][last]
+					idx.KV[key] = idx.KV[key][:last]
+					break
+				}
 			}
 		}
 	}
