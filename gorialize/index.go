@@ -18,9 +18,55 @@ func NewIndex() Index {
 	}
 }
 
-func (idx Index) getIDs(model string, field string, value interface{}) (ids []int, ok bool) {
+func (idx Index) getIDs(model string, field string, value interface{}) []int {
 	key := makeKey(model, field, value)
-	ids, ok = idx.KV[key]
+	return idx.KV[key]
+}
+
+func (idx Index) applyWhereClauses(model string, pickFirst bool, clauses ...Where) (ids []int) {
+	idMap := map[int]bool{}
+	for _, clause := range clauses {
+		var tmpIDs []int
+		switch true {
+		case len(clause.Range) > 0:
+			for _, value := range clause.Range {
+				tmpIDs = append(tmpIDs, idx.getIDs(model, clause.Field, value)...)
+			}
+		case len(clause.In) > 0:
+			for _, value := range clause.In {
+				tmpIDs = append(tmpIDs, idx.getIDs(model, clause.Field, value)...)
+			}
+		default:
+			tmpIDs = idx.getIDs(model, clause.Field, clause.Equals)
+		}
+
+		if clause.And == nil {
+			for _, id := range tmpIDs {
+				idMap[id] = true
+			}
+		} else {
+			tmpIdMap := map[int]int{}
+			for _, id := range tmpIDs {
+				tmpIdMap[id]++
+			}
+			idsToAnd := idx.applyWhereClauses(model, pickFirst, *clause.And)
+			if pickFirst {
+				ids = idsToAnd
+				return
+			}
+			for _, id := range idsToAnd {
+				tmpIdMap[id]++
+			}
+			for id, cnt := range tmpIdMap {
+				if cnt > 1 {
+					idMap[id] = true
+				}
+			}
+		}
+	}
+	for id := range idMap {
+		ids = append(ids, id)
+	}
 	return
 }
 
@@ -79,7 +125,7 @@ func makeValFromKey(key string, id int) (string, error) {
 	cnt := 0
 	for i, c := range key {
 		if c == ':' {
-			cnt += 1
+			cnt++
 			if cnt == 2 {
 				val := fmt.Sprintf("%s:%d", key[:i], id)
 				return val, nil

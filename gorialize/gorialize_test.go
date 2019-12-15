@@ -379,8 +379,8 @@ func TestIndexAfterCreate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ids, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
-		if !ok {
+		ids := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if len(ids) == 0 {
 			t.Fatal("Index doesn't contain entry")
 		}
 		if len(ids) < 1 {
@@ -416,8 +416,8 @@ func TestIndexAfterDelete(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ids, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
-		if !ok {
+		ids := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if len(ids) == 0 {
 			t.Fatal("Index doesn't contain entry")
 		}
 		if len(ids) < 1 {
@@ -434,11 +434,9 @@ func TestIndexAfterDelete(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ids2, ok := dir.Index.getIDs("gorialize.userV3", "Name", name)
-		if ok {
-			if len(ids2) > 0 {
-				t.Fatal("Index still contains entry")
-			}
+		ids2 := dir.Index.getIDs("gorialize.userV3", "Name", name)
+		if len(ids2) > 0 {
+			t.Fatal("Index still contains entry")
 		}
 	}
 
@@ -474,12 +472,11 @@ func TestFind(t *testing.T) {
 
 func TestFindAllCB(t *testing.T) {
 	beforeEach()
-
 	newUsers := []userV3{}
 	for _, age := range []int{17, 36, 23, 56, 19, 23} {
 		user := userV3{
 			Name: faker.Name().Name(),
-			Age: uint(age),
+			Age:  uint(age),
 		}
 		err := dir.Create(&user)
 		if err != nil {
@@ -491,7 +488,7 @@ func TestFindAllCB(t *testing.T) {
 	serializedUsers := []userV3{}
 	err := dir.FindAllCB(&userV3{}, func(resource interface{}) {
 		serializedUsers = append(serializedUsers, *resource.(*userV3))
-	}, Where{Field: "Age", Equals: 23,})
+	}, Where{Field: "Age", Equals: 23})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -505,7 +502,7 @@ func TestFindAllCB(t *testing.T) {
 	expectedUsers := []userV3{
 		newUsers[2],
 		newUsers[5],
-	}	
+	}
 	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
 		t.Fatal("Found users don't match expected users")
 	}
@@ -520,7 +517,7 @@ func TestFindAll(t *testing.T) {
 	for _, age := range []int{17, 36, 23, 56, 19, 23} {
 		user := userV3{
 			Name: faker.Name().Name(),
-			Age: uint(age),
+			Age:  uint(age),
 		}
 		err := dir.Create(&user)
 		if err != nil {
@@ -530,7 +527,7 @@ func TestFindAll(t *testing.T) {
 	}
 
 	serializedUsers := []userV3{}
-	err := dir.FindAll(&serializedUsers, Where{Field: "Age", Equals: 23,})
+	err := dir.FindAll(&serializedUsers, Where{Field: "Age", Equals: 23})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -544,7 +541,7 @@ func TestFindAll(t *testing.T) {
 	expectedUsers := []userV3{
 		newUsers[2],
 		newUsers[5],
-	}	
+	}
 	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
 		t.Fatal("Found users don't match expected users")
 	}
@@ -552,14 +549,14 @@ func TestFindAll(t *testing.T) {
 	afterEach()
 }
 
-func TestFindAllWithTwoWhereClauses(t *testing.T) {
+func TestFindAllWithAndedWhereClauses(t *testing.T) {
 	beforeEach()
 
 	newUsers := []userV3{}
 	for _, age := range []int{17, 36, 23, 56, 19, 23} {
 		user := userV3{
 			Name: "John Doe",
-			Age: uint(age),
+			Age:  uint(age),
 		}
 		err := dir.Create(&user)
 		if err != nil {
@@ -570,8 +567,7 @@ func TestFindAllWithTwoWhereClauses(t *testing.T) {
 
 	serializedUsers := []userV3{}
 	err := dir.FindAll(&serializedUsers,
-		Where{Field: "Name", Equals: "John Doe",},
-		Where{Field: "Age", Equals: 23,},
+		Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: 23}},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -583,17 +579,20 @@ func TestFindAllWithTwoWhereClauses(t *testing.T) {
 		t.Fatalf("Found: %d, expected: %d", actualCnt, expectedCnt)
 	}
 
-	expectedUsers := []userV3{
-		newUsers[2],
-		newUsers[5],
-	}	
-	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
+	expectedUsersMap := map[int]userV3{
+		newUsers[2].ID: newUsers[2],
+		newUsers[5].ID: newUsers[5],
+	}
+	serializedUsersMap := map[int]userV3{
+		serializedUsers[0].ID: serializedUsers[0],
+		serializedUsers[1].ID: serializedUsers[1],
+	}
+	if !reflect.DeepEqual(expectedUsersMap, serializedUsersMap) {
 		t.Fatal("Found users don't match expected users")
 	}
 
 	afterEach()
 }
-
 
 func TestFindAllWithIntPassedAsString(t *testing.T) {
 	beforeEach()
@@ -602,7 +601,7 @@ func TestFindAllWithIntPassedAsString(t *testing.T) {
 	for _, age := range []int{17, 36, 23, 56, 19, 23} {
 		user := userV3{
 			Name: "John Doe",
-			Age: uint(age),
+			Age:  uint(age),
 		}
 		err := dir.Create(&user)
 		if err != nil {
@@ -613,8 +612,7 @@ func TestFindAllWithIntPassedAsString(t *testing.T) {
 
 	serializedUsers := []userV3{}
 	err := dir.FindAll(&serializedUsers,
-		Where{Field: "Name", Equals: "John Doe",},
-		Where{Field: "Age", Equals: "23",},
+		Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: "23"}},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -626,11 +624,15 @@ func TestFindAllWithIntPassedAsString(t *testing.T) {
 		t.Fatalf("Found: %d, expected: %d", actualCnt, expectedCnt)
 	}
 
-	expectedUsers := []userV3{
-		newUsers[2],
-		newUsers[5],
-	}	
-	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
+	expectedUsersMap := map[int]userV3{
+		newUsers[2].ID: newUsers[2],
+		newUsers[5].ID: newUsers[5],
+	}
+	serializedUsersMap := map[int]userV3{
+		serializedUsers[0].ID: serializedUsers[0],
+		serializedUsers[1].ID: serializedUsers[1],
+	}
+	if !reflect.DeepEqual(expectedUsersMap, serializedUsersMap) {
 		t.Fatal("Found users don't match expected users")
 	}
 

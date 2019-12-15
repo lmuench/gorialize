@@ -45,6 +45,7 @@ type Where struct {
 	Equals interface{}
 	In     []interface{}
 	Range  []int
+	And    *Where
 }
 
 func (q Query) Log() {
@@ -53,6 +54,7 @@ func (q Query) Log() {
 		fmt.Println("Operation     :", q.Operation)
 		fmt.Println("Model         :", q.Model)
 		fmt.Println("ID            :", q.ID)
+		fmt.Println("Matched IDs   :", q.MatchedIDs)
 		fmt.Println("Resource      :", q.Resource)
 		fmt.Println("Directory     :", q.DirPath)
 		fmt.Println("Fatal Error   :", q.FatalError)
@@ -475,27 +477,11 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 		q.FatalError = errors.New("Model name missing")
 		return
 	}
-	whereClauseCount := len(q.WhereClauses)
-	if whereClauseCount == 0 {
+	if len(q.WhereClauses) == 0 {
 		q.FatalError = errors.New("Where clauses missing")
 		return
 	}
-	idCountMap := make(map[int]int, 1)
-	for _, clause := range q.WhereClauses {
-		ids, ok := q.Dir.Index.getIDs(q.Model, clause.Field, clause.Equals)
-		if ok {
-			for _, id := range ids {
-				idCountMap[id] += 1
-				if idCountMap[id] == whereClauseCount {
-					q.MatchedIDs = append(q.MatchedIDs, id)
-					if pickFirst {
-						q.ID = int(id)
-						return
-					}
-				}
-			}
-		}
-	}
+	q.MatchedIDs = q.Dir.Index.applyWhereClauses(q.Model, pickFirst, q.WhereClauses...)
 	if len(q.MatchedIDs) == 0 {
 		q.FatalError = errors.New("No matching where clauses")
 	}
