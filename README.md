@@ -41,7 +41,7 @@ type Where struct {
     And    *Where
 }
 ```
-Where clauses can be passed to Find() and FindAll() and can be ANDed by being chained via `Where#And`.
+Where clauses are passed to Find() and can be ANDed by being chained via `Where#And`.
 
 #### NewDirectory
 ```Go
