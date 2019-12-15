@@ -499,11 +499,15 @@ func TestFindAllCB(t *testing.T) {
 		t.Fatalf("Found: %d, expected: %d", actualCnt, expectedCnt)
 	}
 
-	expectedUsers := []userV3{
-		newUsers[2],
-		newUsers[5],
+	expectedUsersMap := map[int]userV3{
+		newUsers[2].ID: newUsers[2],
+		newUsers[5].ID: newUsers[5],
 	}
-	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
+	serializedUsersMap := map[int]userV3{
+		serializedUsers[0].ID: serializedUsers[0],
+		serializedUsers[1].ID: serializedUsers[1],
+	}
+	if !reflect.DeepEqual(expectedUsersMap, serializedUsersMap) {
 		t.Fatal("Found users don't match expected users")
 	}
 
@@ -538,11 +542,15 @@ func TestFindAll(t *testing.T) {
 		t.Fatalf("Found: %d, expected: %d", actualCnt, expectedCnt)
 	}
 
-	expectedUsers := []userV3{
-		newUsers[2],
-		newUsers[5],
+	expectedUsersMap := map[int]userV3{
+		newUsers[2].ID: newUsers[2],
+		newUsers[5].ID: newUsers[5],
 	}
-	if !reflect.DeepEqual(expectedUsers, serializedUsers) {
+	serializedUsersMap := map[int]userV3{
+		serializedUsers[0].ID: serializedUsers[0],
+		serializedUsers[1].ID: serializedUsers[1],
+	}
+	if !reflect.DeepEqual(expectedUsersMap, serializedUsersMap) {
 		t.Fatal("Found users don't match expected users")
 	}
 
