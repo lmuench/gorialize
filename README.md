@@ -60,20 +60,27 @@ Read reads the serialized resource with the given ID.
 
 #### ReadAll
 ```Go
-func (dir Directory) ReadAll(slice interface{}) error {
+func (dir Directory) ReadAll(slice interface{}) error
 ```
-ReadAll reads all serialized resources of the given slice's elements's type and appends them to the slice.
+ReadAll reads all serialized resources of the given slice's element type and appends them to the slice.
 
 #### ReadAllCB
 ```Go
 func (dir Directory) ReadAllCB(resource interface{}, callback func(resource interface{})) error
 ```
-ReadAllCB reads all serialized resource of the given type and calls the provided callback function on each.
+ReadAllCB reads all serialized resources of the given type and calls the provided callback function on each.
 
 #### Find
 Find reads the first serialized resources matching the given WHERE clauses
 ```Go
-func (dir Directory) Find(resource interface{}, whereClauses ...Where) error
+func (dir Directory) Find(resource interface{}, clauses ...Where) error
+```
+
+## FindAllCB
+FindAllCB finds all serialized resource of the given type matching all
+provided WHERE clauses and calls the provided callback function on each.
+```Go
+func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
 
 #### Replace
@@ -81,12 +88,6 @@ func (dir Directory) Find(resource interface{}, whereClauses ...Where) error
 func (dir Directory) Replace(resource interface{}) error
 ```
 Replace replaces a serialized resource
-
-#### PartialReplace
-```Go
-func (dir Directory) PartialReplace(resource interface{}, id int) error
-```
-PartialReplace partially replaces a serialized resource with all non-zero values of the given resource.
 
 #### Delete
 ```Go
