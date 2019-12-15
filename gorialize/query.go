@@ -481,7 +481,7 @@ func (q *Query) ApplyWhereClauses(pickFirst bool) {
 		q.FatalError = errors.New("Where clauses missing")
 		return
 	}
-	q.MatchedIDs = q.Dir.Index.applyWhereClauses(q.Model, q.WhereClauses...)
+	q.MatchedIDs = q.Dir.Index.getMatchingIDs(q.Model, q.WhereClauses...)
 	if len(q.MatchedIDs) == 0 {
 		q.FatalError = errors.New("No matching where clauses")
 	}
