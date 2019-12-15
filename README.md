@@ -38,9 +38,10 @@ type Where struct {
     Equals interface{}
     In     []interface{}
     Range  []int
+    And    *Where
 }
 ```
-Where clauses can be passed to Find() and FindAll()
+Where clauses can be passed to Find() and FindAll() and can be ANDed by being chained via `Where#And`.
 
 #### NewDirectory
 ```Go
@@ -76,13 +77,13 @@ ReadAllCB reads all serialized resources of the given type and calls the provide
 ```Go
 func (dir Directory) Find(slice interface{}, clauses ...Where) error
 ```
-Find finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
+Find finds all serialized resource of the given slice's element type matching all given WHERE clauses ORed and appends them to the slice.
 
 ## FindCB
 ```Go
 func (dir Directory) FindCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
-FindCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
+FindCB finds all serialized resource of the given type matching all given WHERE clauses ORed and calls the provided callback function on each.
 
 #### Replace
 ```Go
