@@ -23,7 +23,7 @@ func (idx Index) getIDs(model string, field string, value interface{}) []int {
 	return idx.KV[key]
 }
 
-func (idx Index) applyWhereClauses(model string, pickFirst bool, clauses ...Where) (ids []int) {
+func (idx Index) applyWhereClauses(model string, clauses ...Where) (ids []int) {
 	idMap := map[int]bool{}
 	for _, clause := range clauses {
 		var tmpIDs []int
@@ -49,11 +49,7 @@ func (idx Index) applyWhereClauses(model string, pickFirst bool, clauses ...Wher
 			for _, id := range tmpIDs {
 				tmpIdMap[id]++
 			}
-			idsToAnd := idx.applyWhereClauses(model, pickFirst, *clause.And)
-			if pickFirst {
-				ids = idsToAnd
-				return
-			}
+			idsToAnd := idx.applyWhereClauses(model, *clause.And)
 			for _, id := range idsToAnd {
 				tmpIdMap[id]++
 			}
