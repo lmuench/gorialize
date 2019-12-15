@@ -76,9 +76,14 @@ Find reads the first serialized resources matching the given WHERE clauses
 func (dir Directory) Find(resource interface{}, clauses ...Where) error
 ```
 
+#### FindAll
+FindAll finds all serialized resource of the given slice's element type matching all provided WHERE clauses and appends them to the slice.
+```Go
+func (dir Directory) FindAll(slice interface{}, clauses ...Where) error
+```
+
 ## FindAllCB
-FindAllCB finds all serialized resource of the given type matching all
-provided WHERE clauses and calls the provided callback function on each.
+FindAllCB finds all serialized resource of the given type matching all provided WHERE clauses and calls the provided callback function on each.
 ```Go
 func (dir Directory) FindAllCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
