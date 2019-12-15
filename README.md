@@ -79,7 +79,7 @@ func (dir Directory) Find(slice interface{}, clauses ...Where) error
 ```
 Find finds all serialized resource of the given slice's element type matching all given WHERE clauses ORed and appends them to the slice.
 
-## FindCB
+#### FindCB
 ```Go
 func (dir Directory) FindCB(resource interface{}, callback func(resource interface{}), clauses ...Where) error
 ```
