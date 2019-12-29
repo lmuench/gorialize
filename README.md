@@ -37,21 +37,21 @@ Find the serialized struct through its indexed struct fields
 ```Go
 people := []Person{}
 
-// by using ORed WHERE clauses
+// using ORed WHERE clauses
 dir.Find(&people,
     Where{Field: "Name", Equals: "John Doe"},
     Where{Field: "Age", Equals: 42},
 )
 
-// or by using ANDed WHERE clauses
+// using ANDed WHERE clauses
 dir.Find(&people,
     Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: 42}},
 )
 
-// or by providing a slice of valid values
+// by providing a slice of valid values
 dir.Find(&people, Where{Field: "Name", In: []interface{"John Smith", "John Doe", "Jane Doe"}})
 
-// or by providing a range of valid int values
+// by providing a range of valid int values
 dir.Find(&people, Where{Field: "Age", Range: []int{40, 50}})
 
 fmt.Println(people) // -> people slice contains John Doe
