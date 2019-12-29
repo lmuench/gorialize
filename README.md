@@ -1,6 +1,64 @@
 # Gorialize
 Gorialize is an embedded database that stores Go structs serialized to [gobs](https://golang.org/pkg/encoding/gob/).
 
+## Usage
+Define a struct with an `ID` field of type `int`
+```Go
+type Person struct {
+    ID   int
+    Name string `gorialize:"indexed"`
+    Age  uint   `gorialize:"indexed"`
+}
+```
+
+Choose a directory to store serialized structs
+```Go
+dir := NewDirectory(DirectoryConfig{
+    Path:       "/tmp/gorialize/gorialize_test",
+    Encrypted:  true,
+    Passphrase: "my-secret-passphrase",
+    Log:        false,
+})
+```
+
+Persist a serialized struct
+```Go
+person := Person{
+    Name: "John Doe",
+    Age:  42,
+})
+
+dir.Create(person)
+
+fmt.Println(person.ID) // -> ID created by Gorialize
+```
+
+Find the serialized struct through its indexed struct fields
+```Go
+people := []Person{}
+
+// using ORed WHERE clauses
+dir.Find(&people,
+    Where{Field: "Name", Equals: "John Doe"},
+    Where{Field: "Age", Equals: 42},
+)
+
+// using ANDed WHERE clauses
+dir.Find(&people,
+    Where{Field: "Name", Equals: "John Doe", And: &Where{Field: "Age", Equals: 42}},
+)
+
+// by providing a slice of valid values
+dir.Find(&people, Where{Field: "Name", In: []interface{"John Smith", "John Doe", "Jane Doe"}})
+
+// by providing a range of valid int values
+dir.Find(&people, Where{Field: "Age", Range: []int{40, 50}})
+
+fmt.Println(people) // -> people slice contains John Doe
+```
+
+## API
+
 #### Example Resource Type
 ```Go
 type User struct {
