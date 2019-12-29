@@ -54,7 +54,7 @@ dir.Find(&people, Where{Field: "Name", In: []interface{"John Smith", "John Doe",
 // by providing a range of valid int values
 dir.Find(&people, Where{Field: "Age", Range: []int{40, 50}})
 
-fmt.Println(people) // -> people slice contains John Doe
+fmt.Println(people) // -> people slice containing John Doe
 ```
 
 ## API
