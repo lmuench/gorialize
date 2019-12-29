@@ -28,7 +28,7 @@ person := Person{
     Age:  42,
 })
 
-dir.Create(person)
+dir.Create(&person)
 
 fmt.Println(person.ID) // -> ID created by Gorialize
 ```
