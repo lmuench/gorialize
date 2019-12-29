@@ -14,7 +14,7 @@ type Person struct {
 Choose a directory to store serialized structs
 ```Go
 dir := NewDirectory(DirectoryConfig{
-    Path:       "/tmp/gorialize/gorialize_test",
+    Path:       "/tmp/gorialize_test",
     Encrypted:  true,
     Passphrase: "my-secret-passphrase",
     Log:        false,
